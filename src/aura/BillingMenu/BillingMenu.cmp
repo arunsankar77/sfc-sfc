@@ -1,0 +1,209 @@
+<aura:component implements="lightning:actionOverride,flexipage:availableForRecordHome,force:lightningQuickActionWithoutHeader,flexipage:availableForAllPageTypes,force:hasRecordId" access="global" controller="ButtonController"> 
+    
+    <aura:handler name="init" value="this" action="{!c.doInit}"/>  <!--giri-->
+    <aura:attribute name="userInfo" type="user"/>  <!--giri-->
+    <aura:attribute name="record" type="Object"/>
+	<aura:attribute name="CSC_URL" type="String"/>
+    <aura:attribute name="accountRecord" type="Object"/>
+    <aura:attribute name="recordError" type="String"/>
+    <aura:attribute name="mapURLs" type="Map"/>
+    <aura:attribute name="isNBAEnabled" type="Boolean"/>
+    <aura:attribute name="profileName" type="String"/>
+    <aura:attribute name="setting" type="Object"/>
+    <aura:attribute name="IsLead" type="Boolean"/>
+    <aura:attribute name="Construction_Date" type="String"/>
+    <aura:attribute name="CstmLabelIsLead" type="String"/>
+    <aura:attribute name="AccountEmail" type="String"/>
+    <aura:attribute name="Address_TerminalType" type="String"/>
+    <aura:attribute name="isBOTEnabled" type="Boolean"/>
+    <aura:attribute name="appLaunch" type="Object"/> 
+    <aura:attribute name="eshopEnabledSetting" type="Object"/>
+    <aura:attribute name="isSendRMA" type="boolean" default="false"/>		
+    <aura:attribute name="isCSEEnabled" type="boolean" default="false"/>
+    <aura:attribute name="TN" type="String"/>
+	<aura:attribute name="disableOrderButtons" type="Boolean" default="false"/>
+	<aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:attribute name="isConvertedAccount" type="boolean" default="false"/>
+    <!-- Start Sibling Communication -->
+    <c:auraPubsub aura:id="pubsub" onready="{!c.handlePubsubReady}" />
+    <aura:handler name="destroy" value="{!this}" action="{!c.handleDestroy}" />
+    <!-- End Sibling Communication -->
+     <!-- CSICC-44748 - Add QBAT button enable toggle -->
+    <aura:attribute name="isQBATEnabled" type="Boolean"/>
+    <!-- attributes for Internal Chat -->
+    <aura:attribute name="vfHost" type="String"/>
+    <aura:attribute name="internalChatWrapperList" type="object"/>
+    <aura:attribute name="internalChatButtonNameIdMap" type="Map" />
+    <aura:attribute name="removeChatButtonHandlerFn" type="Object"/>
+	<aura:attribute name="showRCCButton" type="Boolean" default="false"/>	
+	<aura:attribute name="showRCCsend" type="Boolean" default="false"/>
+	<aura:attribute name="canSendTestEmails" type="boolean" default="false"/>
+	<aura:attribute name="canSendSMS" type="boolean" default="false"/>
+	 <!-- Spinner -->
+    <aura:if isTrue="{!v.showSpinner}">
+            <lightning:spinner alternativeText="Loading" size="large" />
+    </aura:if>
+    <lightning:workspaceAPI aura:id="workspace" />
+    <div class="slds-card">   
+        <div class="slds-card__body slds-card__body_inner slds-p-top_small">
+            <aura:if isTrue="{!and(not(v.IsLead),v.Construction_Date!=undefined)}">
+                <aura:if isTrue="{!and(v.CstmLabelIsLead != 'None',or(v.Address_TerminalType== undefined,v.Address_TerminalType =='Fiber'))}">
+                    <div style="border-color:green;border-style:solid; border-radius:4px;background-color:lightgreen;padding: 6px 6px 6px 6px;margin: 4px 20px; border-width: 2px; margin-left: 15%; margin-right: 15%;margin-top: -2%;">
+                        <center><b><ui:outputText value="{!$Label.c.Fiber_Message}"/>  {!v.Construction_Date}.</b><br></br>
+                            <aura:if isTrue="{!v.AccountEmail!=undefined}">
+                                <b><ui:outputText value="{!$Label.c.Fiber_Message_2}"/></b><br></br>
+                                <lightning:button class="slds-button slds-button_neutral" label="Yes" onclick="{!c.yes}"/> 
+                                <lightning:button class="slds-button slds-button_neutral" label="No" onclick="{!c.no}"/> 
+                            </aura:if>
+                            <aura:if isTrue="{!v.AccountEmail==undefined}">
+                                <div style="color:red"><b><ui:outputText value="{!$Label.c.Fiber_Message_4}"/></b></div>
+                            </aura:if>
+                        </center>
+                    </div>
+                </aura:if>
+            </aura:if>
+            <lightning:buttonGroup >
+                
+                <!-- Conport Button -->
+                <aura:if isTrue="{!v.accountRecord.RecordType.Name=='PPP Billing Account'}">
+                    <lightning:button class="slds-button slds-button_neutral" label="Conport" value="Conport" onclick="{!c.Conport}"/>
+                </aura:if>
+                
+                <!-- Product button -->
+                <!-- Added logic to not show Products if Account is eShop because of CSICC-11442 -->
+                <aura:if isTrue="{!(v.accountRecord.isESHOPAccount__c || v.accountRecord.RecordType.Name=='PPP Billing Account')}">
+                         <lightning:button class="slds-button slds-button_neutral" label="Products"/>
+                        <lightning:buttonMenu onselect="{! c.handleSelect }" alternativeText="Show menu">
+                            <lightning:menuItem value="EshopProductSummary" label="Products Summary"/>
+                        </lightning:buttonMenu> 
+                    <aura:set attribute="else">
+                        <lightning:button class="slds-button slds-button_neutral" label="Products"/>
+                        <lightning:buttonMenu onselect="{! c.handleSelect }" alternativeText="Show menu">
+                            <aura:if isTrue="{!v.accountRecord.Billing_Source__c=='CRIS'}">
+                                <lightning:menuItem label="CSR" value="CSR"/>
+                                <aura:set attribute="else">
+                                    <lightning:menuItem value="ProductSummary" label="Products Summary"/>
+                                </aura:set>   
+                            </aura:if>
+                        </lightning:buttonMenu>
+                    </aura:set>
+                </aura:if>
+                
+                
+                <!-- Billing Buttons -->
+                
+               <aura:if isTrue="{!v.accountRecord.RecordType.Name=='PPP Billing Account'}">
+			             <lightning:button class="slds-button slds-button_neutral" label="Billing"/>
+							<lightning:buttonMenu onselect="{! c.handleSelect }">
+								<lightning:menuItem label="View Bills" value="statementSummary" />
+								<lightning:menuItem label="Payment Options" value="PaymentOptions" disabled="{!v.isConvertedAccount}"/>
+							</lightning:buttonMenu>
+                    <aura:set attribute="else">
+                        <lightning:button class="slds-button slds-button_neutral" label="Billing"/>                
+                        <lightning:buttonMenu onselect="{! c.handleSelect }">
+                            
+                            <lightning:menuItem value="BillComparison" label="Bill Comparison" /> 
+                            <lightning:menuItem label="View Bills" value="ViewBills"/> 
+                            <lightning:menuItem label="Billing and Payment History" value="Billing"/>
+                            <lightning:menuItem label="Adjustments" value="ShowAccountAdjustment"/>
+							<aura:if isTrue="{!or(v.accountRecord.Billing_Source__c=='CRIS',and(v.accountRecord.RecordType.Name=='Postpaid Converted',and(v.accountRecord.Previous_Account_Number__c !='',v.isQBATEnabled)))}"> <!-- C2E- CSICC-44748 -->
+                                <lightning:menuItem label="QBAT" value="QBAT" disabled="{!v.isConvertedAccount}"/>
+                            </aura:if>
+                            <lightning:menuItem label="Payment Options" value="PaymentOptions" disabled="{!v.isConvertedAccount}"/>  <!--LCC-772-->
+                            <aura:if isTrue="{!v.accountRecord.Billing_Source__c=='Ensemble'}">
+                                <lightning:menuItem label="Pending Charges" value="Charges"/> 
+                            </aura:if>
+                            <lightning:menuItem label="Request Bill Reprint" value="BillReprint"/> <!--giri-->
+                            <lightning:menuItem label="Deposit History" value="DepositHist"/> <!--giri-->
+                            <lightning:menuItem label="Edit Billing Address" value="EditBilling" disabled="{!v.isConvertedAccount}"/>
+                            <aura:if isTrue="{!v.accountRecord.Billing_Source__c=='CRIS'}">
+                                <lightning:menuItem label="Update to Temporary No Treat" value="UpdatetoTemporaryNoTreat" disabled="{!v.isConvertedAccount}"/>
+                            </aura:if>
+                        </lightning:buttonMenu>
+                    </aura:set>   
+                </aura:if> 
+                
+                <!--More Actions-->
+                
+                <lightning:button class="slds-button slds-button_neutral " label="More Actions"/>
+                <lightning:buttonMenu alternativeText="Show menu" class="slds-button_last" onselect="{!c.handleSelect }"> 
+                    
+                    <aura:if isTrue="{!v.accountRecord.RecordType.Name=='PPP Billing Account'}">
+                        <lightning:menuItem label="New Service Address" value="NewServiceAddress"/>  
+						<aura:if isTrue="{!and(v.accountRecord.MyAccount_ID__c != 'Not Setup' , v.accountRecord.MyAccount_ID__c != null , v.accountRecord.MyAccount_ID__c != '')}">
+                            <lightning:menuItem label="Change CenturyLink ID" value="ChangeCenturyLinkID"/>  
+                            <lightning:menuItem label="CenturyLink ID Password Reset" value="CenturyLinkIDPasswordReset"/>
+                            <lightning:menuItem label="Change Email Password" value="ChangeEmailPassword"/>
+                        </aura:if>										<aura:set attribute="else">
+                            <lightning:menuItem label="Add to Campaign" value="AddtoCampaign"/>
+                            <aura:if isTrue="{!v.userInfo.Profile.Name == 'System Administrator'}">
+                                <lightning:menuItem label="Refresh" value="Refresh"/>
+                            </aura:if>
+                            <lightning:menuItem label="Prismanage" value="Prismanage"/>
+                            <lightning:menuItem label="New Service Address" value="NewServiceAddress"/>
+                            <lightning:menuItem label="KAL" value="KAL"/>
+							<lightning:menuItem label="DOCS Forms" value="docsForms"/>
+                            <lightning:menuItem label="Change Email Password" value="ChangeEmailPassword"/>
+                            <aura:if isTrue="{!and(v.isBOTEnabled,(v.accountRecord.Billing_Source__c=='CRIS' || v.accountRecord.Billing_Source__c=='Ensemble'))}">
+                                <lightning:menuItem label="Return/Replace Modem" value="sendRMA" disabled="{!v.isConvertedAccount}"/>
+                            </aura:if>                                </aura:set>   
+                    </aura:if>
+                    
+                </lightning:buttonMenu>
+                
+                <!-- Internal Chat Button Menu-->
+                <aura:if isTrue="{!!v.isConvertedAccount}">
+                <lightning:button class="slds-button slds-button_neutral " label="Chat"/>
+                <lightning:buttonMenu alternativeText="Show menu" class="slds-button_last" onselect="{!c.handleStartChat }">     
+                    <aura:iteration var="chat" items="{! v.internalChatWrapperList}">
+                        <lightning:menuItem aura:id="{! chat.chatTeamDeveloperName}" label="{! chat.chatTeamName }" value="{! chat.chatTeamDeveloperName }" disabled="{! chat.enabledDisabledLogic == 'Enabled Always' ? false :  chat.isOffline}"/>
+                    </aura:iteration>   
+                </lightning:buttonMenu>
+                 
+                <!-- The Visualforce page to check Agent Availability and  start chart-->
+                <aura:if isTrue="{! !empty(v.vfHost)}">
+                	<iframe aura:id="vfFrame" src="{!'https://' + v.vfHost + '/apex/InternalLiveAgent?id='+v.recordId}" style="display: none;"/>
+				</aura:if>
+                </aura:if>
+                 <aura:if isTrue="{!v.isCSEEnabled}">
+                    <lightning:button class="slds-button slds-button_neutral " label="Troubleshoot"/>
+                   <!-- <lightning:buttonMenu alternativeText="Show menu" class="slds-button_last" onselect="{!c.Troubleshoot }">-->  
+                    <lightning:buttonMenu alternativeText="Show menu" class="slds-button_last" onselect="{!c.handleSelect }">
+                        <lightning:menuItem aura:id="LaunchCSCtroubleshoot" label="Launch CSC troubleshoot" value="LaunchCSCtroubleshoot"/>
+                        <lightning:menuItem aura:id="Reverifycustomer" label="Reverify Customer" value="reverifyCustomer"/>
+                    </lightning:buttonMenu>
+                </aura:if>
+                <!-- Order Buttons -->
+                
+                <aura:if isTrue="{!v.accountRecord.AccountNumber__c==undefined}">
+                    <lightning:button class="slds-button slds-button_neutral" label="Order (eShop)" onclick="{!c.Order_ESHOP}" disabled = "{!v.disableOrderButtons}"/> 
+                    <lightning:button class="slds-button slds-button_neutral" label="Order" onclick="{!c.Order}" disabled = "{!v.disableOrderButtons}"/>
+                    <aura:set attribute="else">
+                        <aura:if isTrue="{!(v.accountRecord.isESHOPAccount__c || v.accountRecord.RecordType.Name=='PPP Billing Account')}">
+                            <lightning:button class="slds-button slds-button_neutral" label="Order" onclick="{!c.Order_ESHOP}" disabled = "{!v.disableOrderButtons}"/>
+                            <aura:set attribute="else">
+                                <lightning:button class="slds-button slds-button_neutral" label="Order" onclick="{!c.Order}" disabled = "{!v.disableOrderButtons}"/>
+                            </aura:set> 
+                        </aura:if>
+                    </aura:set> 
+                </aura:if>
+                <aura:if isTrue="{!v.isNBAEnabled}">
+                    <lightning:button class="slds-button slds-button_neutral" label="Offers" onclick="{!c.Offers}"/>
+                </aura:if>
+				<aura:if isTrue="{!v.showRCCButton}">	
+                      <lightning:button class="slds-button slds-button_neutral" label="Send RCCs" onclick="{!c.sendRCC}" />	
+                </aura:if>
+            </lightning:buttonGroup>    
+        </div>    
+    </div>  
+    <aura:if isTrue="{!v.isSendRMA}">		
+    <c:sendRMA recordId="{!v.recordId}" aura:id="sendRMA" />
+    </aura:if>	
+	<c:changeCenturyLinkId recordId="{!v.recordId}" aura:id="changecenturylinkid" />		  
+	<c:bOTChangeEmailPassword recordId="{!v.recordId}" PhoneNumber="{!v.TN}" CUID="{!v.userInfo.CUID__c}" aura:id="BOTChangeEmailPassword"/>
+    <c:cSCTroubleshoot aura:id="CSCTroubleshoot" recordId="{!v.recordId}" CSCURL="{!v.CSC_URL}"/>
+	<c:reverifyCustomer aura:id="ReverifyCustomer" recordId ="{!v.recordId}" isVerified ="{!v.isVerifiedSSN}"/>
+	<aura:if isTrue="{!v.showRCCsend}">	
+    	<c:agentSendRCC oncloseRCCModal="{!c.closeModal}" canSendSMS="{!v.canSendSMS}" recordId="{!v.recordId}" canSendTestEmails="{!v.canSendTestEmails}"/>	
+    </aura:if>
+</aura:component>

@@ -1,0 +1,21 @@
+<apex:component controller="DisplayServiceAddress">
+<apex:slds />
+    <div class="slds-scope">
+        <apex:attribute name="primaryAccount" description="The Person Account" type="Account" required="true"/>  
+        <apex:repeat value="{!$ObjectType.Account.FieldSets.consoleAccount360}" var="accountField">        
+            <dl class="slds-dl_inline">
+                <dt class="slds-dl_inline__label">{!accountField.Label}:</dt>
+                <dd class="slds-dl_inline__detail">  <apex:outputText value="{!IF((accountField.Label="Do Not Call"),IF(primaryAccount.PersonDoNotCall=true,"Yes","No"),IF((accountField.Label="Service Addresses"),SerAdress,primaryAccount[accountField]))}" escape="false"/></dd>          
+            </dl>    
+        </apex:repeat>
+        <dt class="slds-dl_inline__label">Service Addresses:</dt>
+        <dd class="slds-dl_inline__detail">
+            <apex:outputText label="Service Address" value="{!SerAdress}" escape="false" />
+        </dd>
+         <dt class="slds-dl_inline__label">Record Type:</dt>
+        <dd class="slds-dl_inline__detail">
+            <apex:outputText label="Record Type" value="{!primaryAccount.RecordType.Name}" />
+        </dd>
+    </div>   
+    
+</apex:component>

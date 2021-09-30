@@ -1,0 +1,257 @@
+<apex:page id="pageid" standardController="Account" extensions="AccountAdjustmentExtn" docType="html-5.0" sidebar="false" showHeader="false" lightningStylesheets="true">
+    <apex:includeScript value="/support/console/41.0/integration.js"/> 
+    <style>
+        .HeaderDiv {width:100%;border: 1px solid black;text-align: center;color: white;background-color: green;font-weight: bold;padding: 2px;}
+        .ptable tr{
+        height: 40px;
+        }
+        .ptable td:nth-child(odd){
+        text-align: right;
+        padding-right: 1%;
+        }
+        .ptable td:nth-child(even){
+        text-align: left;
+        }
+        input,textarea,select{
+        border-radius: 5px;
+        border: 1.5px solid green;
+        }
+        .predictiveContainer{
+        z-index:100000;
+        border: 1px solid #b0c5e8;
+        width:300px;
+        height:70px;
+        display:none;
+        font-size: 91%;
+        font-weight: bold;
+        position: absolute;
+        background-color:white;
+        overflow-x: hidden;
+        overflow-y: auto;
+        }
+        
+        .ui-autocomplete {
+            max-height: 200px;
+            overflow-y: auto; /* prevent horizontal scrollbar */
+            overflow-x: hidden; /* add padding to account for vertical scrollbar */
+            z-index: 1000 !important;
+        }
+        .ui-helper-hidden-accessible{
+        display : none !important;
+        }
+        .ui-menu{
+        background-color:#f3eded;
+        width : 150px;
+        overflow-x: hidden;
+        overflow-y: auto;
+        } 
+        .ui-menu-item:hover{
+        background-color: #8c93e6;
+        cursor: pointer;
+        }
+        .slds-scope .slds-theme_error, .slds-scope .slds-theme--error {
+        color: rgb(255, 255, 255);
+        background-color: rgb(51, 195, 55);
+        }
+    </style>
+    
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    
+    <script>
+    $( function() {
+        var availableCarrier = {!JSONstr};
+        $( "#carrier" ).autocomplete({
+            source: availableCarrier,
+            minLength:0
+        });
+    });
+    validateMemoKeyPress = function(el, evt) {
+        var charCode = (evt.which) ? evt.which : event.keyCode;
+        var number = el.value;
+        if(number.length>254){
+            return false;``
+        }
+    }
+    validateFloatKeyPress = function(el, evt) {
+        var charCode = (evt.which) ? evt.which : event.keyCode;
+        var number = el.value.split('.');
+        if (charCode != 46 && charCode > 31 && (charCode < 48 || charCode > 57)) {
+            return false;
+        }
+        //just one dot 
+        if(number.length>1 && charCode == 46){
+            return false;
+        }
+        if(number.length>1 && number[1].length>1){
+            return false;
+        }
+        return true;
+    }
+    
+    function fieldvalidations(){
+        var res = document.getElementById('pageid:formid:reason').value;
+        var car = document.getElementById('carrier').value;
+        var amt = document.getElementById('pageid:formid:amt').value;
+        var memo = document.getElementById('pageid:formid:memo').value;
+        var isNotBlank = true;
+        if(car ==''){
+            document.getElementById('carriererror').style.display = 'block';
+            isNotBlank = false;
+        }else{
+            document.getElementById('carriererror').style.display = 'none';
+        }
+        if(amt ==''){
+            document.getElementById('amterror').style.display = 'block';
+            isNotBlank = false;
+        }else{
+            document.getElementById('amterror').style.display = 'none';
+        }
+        if(res ==''){
+            document.getElementById('reasonerror').style.display = 'block';
+            isNotBlank = false;
+        }else{
+            document.getElementById('reasonerror').style.display = 'none';
+        }
+        if(memo ==''){
+            document.getElementById('memoerror').style.display = 'block';
+            isNotBlank = false;
+        }else{
+            document.getElementById('memoerror').style.display = 'none';
+        } 
+        return isNotBlank;
+    }
+    
+    function selectedcarrier(carrier){
+        var selcar=carrier;
+        retrievecarrier(selcar);
+    }
+    
+    //DE62001
+    function CloseAccountAdjTab() {
+            //First find the ID of the current tab to close it
+           if (sforce.console.isInConsole()){
+                sforce.console.getEnclosingTabId(closeSubtab);
+            }else{
+                window.close();
+            }
+        }
+        
+        var closeSubtab = function closeSubtab(result) {
+            //Now that we have the tab ID, we can close it
+            var tabId = result.id;
+            sforce.console.closeTab(tabId);
+        };
+   
+                   
+    </script>
+     <script>
+        function disableButton() {
+            var btn = document.querySelector("[id$='btn2']");
+            btn.className = 'btn btnDisabled';
+            btn.disabled = 'disabled';
+            return false;
+        }
+        </script>
+    <apex:slds />
+    <apex:form id="formid" >
+        <div id="HeaderDiv" class="HeaderDiv">
+            <span>Account level adjustments should only be performed when there are no billable charges to select</span><br/>
+        </div>
+        <apex:actionFunction name="retrievecarrier" action="{!carriersetting}" reRender="outputboxDiv,predictiveTextDisplay,carcode,pmessage">
+            <apex:param name="selcarrier"  value="" />
+        </apex:actionFunction>
+        
+        
+        
+        <apex:actionStatus id="status" styleClass="slds-is-relative">
+            <apex:facet name="start">            
+                <div class="slds-spinner_container">
+                    <div role="status" class="slds-spinner slds-spinner_medium">                        
+                        <div class="slds-spinner__dot-a"></div>
+                        <div class="slds-spinner__dot-b"></div>
+                    </div>
+                </div>
+            </apex:facet>
+        </apex:actionStatus>
+        <div style="border:3px solid green;border-radius:5px;margin: 2%;">
+            <div style="widht:100%;border-bottom:3px solid green;padding:25px;font-weight:bold;font-size: 15px;">
+                <strong>Account Adjustment</strong>
+            </div>
+            <apex:pageMessages id="pmessage"></apex:pageMessages>
+            <div style="padding:40px">
+                <table class="ptable">
+                    <tr>
+                        <td style="width : 10% !important;"><strong>Reason</strong></td>
+                        <td style="width : 25% !important;">
+                            <apex:actionRegion >
+                                <apex:selectList id="reason" style="width:100%" size="1" value="{!selresaon}">
+                                    <apex:actionSupport event="onchange" action="{!reasonsetting}" reRender="rescode"/>
+                                    <apex:selectOptions value="{!lstReasonOptions}"/>
+                                </apex:selectList>
+                            </apex:actionRegion>
+                            <div id="reasonerror" style="display:none;color:#c00;padding-left: 8px;" class="errormsg">
+                                <strong>{!$Label.VisualForce_Error }</strong>{!$Label.VisualForce_isRequired}
+                            </div>
+                        </td>
+                        
+                        <td style="width : 5% !important;"></td>
+                        <td style="width : 5% !important;"></td>
+                        <td style="width : 15% !important;"></td>
+                        
+                        <td style="width : 15% !important"></td>
+                        <td style="width : 25% !important;"></td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="width : 10% !important;"><strong>Carrier </strong></td>
+                        <td style="width : 25% !important;" >   
+                            
+                            <input id="carrier" value="{!selcarrier}" onblur="selectedcarrier(this.value);" style="width:100%" />
+                            
+                            <div id="carriererror" style="display:none;color:#c00;padding-left: 8px;" class="errormsg">
+                                <strong>{!$Label.VisualForce_Error }</strong>{!$Label.VisualForce_isRequired}
+                            </div>
+                        </td>
+                        <td style="width : 5% !important;padding-left:5px;text-align: left !important;">
+                            <div class="mouseOverInfoOuter" onfocus="addMouseOver(this)" onmouseover="addMouseOver(this)" tabindex="3">
+                                <img src="/img/s.gif" alt="" class="infoIcon" title=""/>
+                                <div class="mouseOverInfo" style="display: none; opacity: -0.2; right: 19px;">Default Carrier is CenturyLink. Type Carrier Code or Name to display additional Carriers for selection.</div>
+                            </div>
+                        </td>
+                        <td style="width : 5% !important;"></td>
+                        <td style="width : 15% !important;"></td>
+                        
+                        <td></td>
+                        
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Amount ($)</strong></td>
+                        <td><!--<apex:input type="number" id="amt" value="{!decAmount}" style="width:100%" onkeypress="return isNumberKey(event);"/>-->
+                            <apex:inputtext id="amt" value="{!adjustment.AccAdj_Amount__c}" onkeypress="return validateFloatKeyPress(this,event);" style="width:100%"/>
+                            <div id="amterror" style="display:none;color:#c00;padding-left: 8px;" class="errormsg">
+                                <strong>{!$Label.VisualForce_Error }</strong>{!$Label.VisualForce_isRequired}
+                            </div>
+                        </td>
+                    </tr>
+                    <tr/>
+                    <tr>
+                        <td><strong>Memo</strong></td>
+                        <td colspan="5" ><apex:inputTextarea rows="4" id="memo" value="{!memo}" html-maxlength="255" style="width:100%;resize: none;" onkeypress="return validateMemoKeyPress(this,event);"/>
+                            <div id="memoerror" style="display:none;color:#c00;padding-left: 8px;"
+                                 class="errormsg">
+                                <strong>{!$Label.VisualForce_Error }</strong>{!$Label.VisualForce_isRequired}
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+                <div style="margin-left: 35%;padding:25px; ">
+                    <apex:commandButton value="Submit" id="btn2" style="width:100px;margin-right: 10px;color: black;border-color: green;" onclick=" if(fieldvalidations()){if({!$User.Approval_Limit__c}<(document.getElementById('pageid:formid:amt').value)){if(confirm('Your Approval Limit is less than the Amount entered. Do you want to proceed?','Yes','No')){}else{return false;}}}else{ return false;} if(disableButton()) " action="{!save}" status="status" reRender="reasonerror,memoerror,amterror,carriererror,pmessage" />
+                    <apex:commandButton value="Cancel" style="width:100px;color: black;border-color: green;" onclick="CloseAccountAdjTab();" status="status"/>
+                   <!--<apex:commandbutton id="btn2"  value="Button" onclick="return disableButton()"/>-->
+                </div>
+            </div>
+        </div>
+    </apex:form>
+</apex:page>

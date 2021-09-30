@@ -1,0 +1,9 @@
+<aura:component implements="lightning:actionOverride,flexipage:availableForRecordHome,force:lightningQuickActionWithoutHeader,force:hasRecordId" controller="UpdateTreatmentonAccount">
+    <aura:attribute name="accountRecord" type="Object"/>
+    <lightning:button class="slds-button slds-button_neutral " label="More Actions"/>
+    <lightning:buttonMenu alternativeText="Show menu" class="slds-button_last" onselect="{!c.handleSelect }"> 
+        <lightning:menuItem label="New Service Address" value="NewServiceAddress"/>
+        <lightning:menuItem label="C2C" value="C2C"/>
+        <lightning:menuItem label="Update to Temporary No Treat" value="UpdatetoTemporaryNoTreat"/>
+    </lightning:buttonMenu>
+</aura:component>

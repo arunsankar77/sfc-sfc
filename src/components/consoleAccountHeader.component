@@ -1,0 +1,13 @@
+<apex:component controller="DisplayServiceAddress">
+    <apex:attribute name="primaryAccount" description="The Person Account" type="Account" required="true"/>
+     <div class="sectionContainer">
+      <div><img src="/img/icon/building32.png"/><label>Account</label></div>
+
+      <div class="sectionContent">
+        <apex:repeat value="{!$ObjectType.Account.FieldSets.consoleAccount360}" var="accountField">
+          <div><span>{!accountField.Label}:</span><span><apex:outputText value="{!IF((accountField.Label="Do Not Call"),IF(primaryAccount.PersonDoNotCall=true,"Yes","No"),IF((accountField.Label="Service Addresses"),SerAdress,primaryAccount[accountField]))}" escape="false"/></span></div>
+        </apex:repeat>
+         <div><span>Service Addresses:</span><span><apex:outputText value="{!SerAdress}" escape="false"/></span></div>     
+      </div>
+    </div>
+</apex:component>

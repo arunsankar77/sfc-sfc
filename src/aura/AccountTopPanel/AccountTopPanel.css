@@ -1,0 +1,7 @@
+.THIS .bodyStyle{
+    padding: 20px;
+}
+.THIS.cmpClass{
+    background: white;
+    border-radius: 5px;
+}

@@ -1,0 +1,171 @@
+<template>
+    <lightning-record-edit-form
+    record-id={recordId}
+    object-api-name="Account"
+    >
+        <!-- Due to technical debt, extra fields were added using this hack *Not recommended -->
+        <lightning-input-field field-name="Billing_Source__c" class="display-none"></lightning-input-field>
+		<lightning-input-field field-name="CenturyLink_Employee__c" class="display-none"></lightning-input-field>
+        <lightning-input-field field-name="MN_Service_Address_Count__c" class="display-none"></lightning-input-field>
+		<lightning-input-field field-name="No_of_MN_Service_Address__c" class="display-none"></lightning-input-field>
+        <lightning-input-field field-name="isEmployeeDiscountFidAvailable__c" class="display-none"></lightning-input-field>
+		<lightning-input-field field-name="AccountNumber" class="display-none"></lightning-input-field>
+		<lightning-input-field field-name="CPNI__c" class="display-none"></lightning-input-field>
+    
+        <!-- End hack -->
+        <lightning-layout multiple-rows="true" horizontal-align="space">
+            <template if:true={calloutData.promotions}>
+                <lightning-layout-item padding="around-small" size="12">
+                    <lightning-datatable
+                        key-field="Id"
+                        data={calloutData.promotions}
+                        columns={promoCols}
+                        hide-checkbox-column>
+                    </lightning-datatable>
+                </lightning-layout-item>
+            </template>    
+            <!--<Ensemble>-->
+			
+            <template if:true={isEnsAcct}>
+				<lightning-layout-item size="5">
+                        <b>
+                            <lightning-output-field field-name="Name"></lightning-output-field>
+                        </b>
+                </lightning-layout-item>
+                <lightning-layout-item size="5"></lightning-layout-item>
+                <lightning-layout-item size="5">
+                    <template if:true={shouldShowIvrSelection}>
+                        <c-information-displayer label="IVR Selection">{callData.ivrSelection}</c-information-displayer>
+                    </template>
+                    <lightning-combobox name="callIntent" value={callIntent} label="Call Intent" options={callIntents} onchange={handleChange} required></lightning-combobox>
+                    <lightning-output-field field-name="AccountNumber"></lightning-output-field>
+                    <template if:false={isVerified}>
+                        <lightning-output-field field-name="Account_Status__c"></lightning-output-field>
+                        <lightning-output-field field-name="Sub_Status__c"></lightning-output-field>
+                        <lightning-output-field field-name="Billing_Address_Info__c"></lightning-output-field>
+                    </template>
+                    <lightning-combobox required name="authorizedContact" value={authorizedContact} label="Authorized Contact" options={authorizedContacts} onchange={handleChange}></lightning-combobox>
+                    <template if:true={isOneTimeAuth}>
+                        <lightning-input name="callingParty" label="Calling Party" required onchange={handleChange}></lightning-input>
+                    </template>
+                </lightning-layout-item>
+                <lightning-layout-item size="5">
+                    <lightning-combobox name="cpni" value={cpni} label="CPNI" options={cpniOptions} onchange={handleChange} required></lightning-combobox>
+                    <lightning-output-field field-name="CPNI__c" class="display-none"></lightning-output-field>
+                    <lightning-layout vertical-align="center">
+                        <lightning-layout-item><c-information-displayer label="Social Security Number" does-contain-async-content is-async-content-ready={calloutData.ssn}>{calloutData.ssn}</c-information-displayer></lightning-layout-item>
+                        <template if:true={isVerified}>
+                            <lightning-layout-item><lightning-icon icon-name="action:approval" alternative-text="Approved" size="x-small" class="green-background"></lightning-icon></lightning-layout-item>
+                        </template>
+                    </lightning-layout>
+                    <lightning-output-field class="red-color" field-name="Password__c"></lightning-output-field>
+                    <template if:false={isVerified}>
+                        <lightning-output-field field-name="Last_Bill_Amount__c"></lightning-output-field>
+                        <c-information-displayer label="Last Payment Method">{lastPaymentMethod}</c-information-displayer>
+                        <lightning-output-field field-name="Date_of_Installation__c"></lightning-output-field>
+                    </template>
+                    <c-information-displayer label="DEAP Portal"><lightning-formatted-url value={calloutData.deapUrl} label="Go To DEAP Portal"></lightning-formatted-url></c-information-displayer>
+                    <lightning-input-field field-name="Special_Instruction__c"></lightning-input-field>
+                </lightning-layout-item>
+            </template>
+            <!--</Ensemble>-->
+            <!--<CRIS>-->
+            <template if:true={isCrisAcct}>
+			<lightning-layout-item style="padding-bottom:0;" padding="around-small" size="6">
+                        <b>
+                            <lightning-output-field field-name="Name"></lightning-output-field>
+                        </b>
+                </lightning-layout-item>
+                <lightning-layout-item style="padding-bottom:0;" padding="around-small" size="6"></lightning-layout-item>
+                <lightning-layout-item padding="around-small" size="6">
+                        <template if:true={shouldShowIvrSelection}>
+                            <c-information-displayer label="IVR Selection">{callData.ivrSelection}</c-information-displayer>
+                        </template>
+                        <lightning-combobox name="callIntent" value={callIntent} label="Call Intent" options={callIntents} onchange={handleChange} required></lightning-combobox>
+                    <lightning-output-field field-name="AccountNumber"></lightning-output-field>
+                    <template if:false={isVerified}>
+                        <lightning-output-field field-name="Account_Status__c"></lightning-output-field>
+                        <lightning-output-field field-name="Sub_Status__c"></lightning-output-field>
+                    </template>
+                    <lightning-output-field field-name="BA_BN2__c"></lightning-output-field>
+                    <template if:false={isVerified}>
+                        <lightning-output-field field-name="Billing_Address_Info__c"></lightning-output-field>
+                    </template>
+                </lightning-layout-item>
+                <lightning-layout-item padding="around-small" size="6">
+                    <lightning-combobox name="cpni" value={cpni} label="CPNI" options={cpniOptions} onchange={handleChange} required></lightning-combobox>
+                    <lightning-output-field field-name="CPNI__c" class="display-none"></lightning-output-field>
+                    <lightning-layout vertical-align="center">
+                        <lightning-layout-item><c-information-displayer label="Social Security Number" does-contain-async-content is-async-content-ready={calloutData.ssn}>{calloutData.ssn}</c-information-displayer></lightning-layout-item>
+                        <template if:true={isVerified}>
+                            <lightning-layout-item><lightning-icon icon-name="action:approval" alternative-text="Approved" size="x-small" class="green-background"></lightning-icon></lightning-layout-item>
+                        </template>
+                    </lightning-layout>
+                    <c-information-displayer label="Security Authentication Hint" does-contain-async-content is-async-content-ready={calloutData.Hint}>{calloutData.Hint}</c-information-displayer>
+                            <c-information-displayer label="Security Authentication Code" does-contain-async-content is-async-content-ready={calloutData.pin}>
+                                <lightning-layout vertical-align="center">
+                                        <template if:true={isCodeRetrievable}>
+                                            <lightning-layout-item><span class="red-color">{calloutData.pin}</span></lightning-layout-item>
+                                            <lightning-layout-item padding="horizontal-small"><a class="slds-button slds-button_brand" target="_blank" href={url}>Send Code</a></lightning-layout-item>
+                                        </template>
+                                        <template if:false={isCodeRetrievable}>
+                                            <lightning-layout-item size="12"><span class="red-color">{calloutData.pin}</span></lightning-layout-item>
+                                        </template>
+                                </lightning-layout>    
+                            </c-information-displayer>
+							<lightning-output-field field-name="Credit_Information__c"></lightning-output-field>
+                    <template if:false={isVerified}>
+                        <lightning-output-field field-name="Last_Bill_Amount__c"></lightning-output-field>
+                        <c-information-displayer label="Last Payment Method">{lastPaymentMethod}</c-information-displayer>
+                        <lightning-output-field field-name="Date_of_Installation__c"></lightning-output-field>
+                    </template>
+                </lightning-layout-item>
+            </template>
+            <!--</CRIS>-->
+			
+			<!--<PPP  Layout>-->
+        <template if:true={isPPPAcct}>
+            <lightning-layout-item size="5">
+                    <b>
+                        <lightning-output-field field-name="Name"></lightning-output-field>
+                    </b>
+            </lightning-layout-item>
+            <lightning-layout-item size="5"></lightning-layout-item>
+            <lightning-layout-item size="5">
+                <template if:true={shouldShowIvrSelection}>
+                    <c-information-displayer label="IVR Selection">{callData.ivrSelection}</c-information-displayer>
+                </template>
+                <lightning-combobox name="callIntent" value={callIntent} label="Call Intent" options={callIntents} onchange={handleChange} required></lightning-combobox>
+                <lightning-output-field field-name="AccountNumber"></lightning-output-field>
+                <template if:false={isVerified}>
+                    <lightning-output-field field-name="Account_Status__c"></lightning-output-field>
+                    <lightning-output-field field-name="Sub_Status__c"></lightning-output-field>
+                    <!--<lightning-output-field field-name="Billing_Address_Info__c"></lightning-output-field> -->
+                </template>
+                <template if:true={shouldShowIvrSelection}>
+                    <c-information-displayer label="Service Address">{servAddrsList}</c-information-displayer>
+                </template>
+                <!--<label class="slds-form-element__label" for="form-element-01">Service Address</label>
+                <label>{servAddrsList}</label> -->
+                
+            </lightning-layout-item>
+            <lightning-layout-item size="5">
+                <lightning-layout vertical-align="center">
+                    <lightning-layout-item><c-information-displayer label="Last 4 of Credit Card" does-contain-async-content is-async-content-ready={prepaidAccInfo.ccInformation}>{prepaidAccInfo.ccInformation}</c-information-displayer></lightning-layout-item>
+                    
+                </lightning-layout>
+                <label class="slds-form-element__label" for="form-element-01">Email Address</label> 
+                    <lightning-output-field variant="label-hidden" field-name="PersonEmail"></lightning-output-field>
+                
+                
+                    <label class="slds-form-element__label" for="form-element-01">Phone Number</label> 
+                    <lightning-output-field variant="label-hidden"  field-name="Can_Be_Reached_Number__pc"></lightning-output-field>
+               
+                
+                
+            </lightning-layout-item>
+        </template>
+		<!--<PPP  Layout>-->
+        </lightning-layout>
+    </lightning-record-edit-form>
+</template>

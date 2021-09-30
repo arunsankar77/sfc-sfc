@@ -1,0 +1,768 @@
+<apex:page standardController="Account" tabStyle="Account" extensions="AccountVerificationExtension,AddressValidation" 
+    title="{!Account.Name} Verification" showHeader="false" sidebar="false"   action="{!initPage}">
+    <style>
+        .pbButtonb .checkmark{
+        display : none;
+        }
+        .checkmark {
+        position: absolute;
+        height: 25px;
+        width: 25px;
+        background-color: green;
+        border-radius:50%;
+        }
+        .checkmark:after {
+        content: "";
+        position: absolute;
+        left: 9px;
+        top: 5px;
+        width: 5px;
+        height: 10px;
+        border: solid white;
+        border-width: 0 3px 3px 0;
+        -webkit-transform: rotate(45deg);
+        -ms-transform: rotate(45deg);
+        transform: rotate(45deg);
+        display: block;
+        }
+        .pbButtonb .commprfs{
+        display : none;
+        }
+       
+
+	   
+		
+    </style>
+    <!--CSICC-38519 --start  --> 
+    <apex:outputPanel rendered="{!if(IsSalesforceLightning==true , true ,false)}">
+    <!--CSICC-38519 --end  --> 
+    <apex:includeScript value="/support/console/40.0/integration.js"/>
+    <apex:includeScript value="{!$Resource.CTLValidate}" />
+    <apex:includeScript value="{!$Resource.CrossPageCommunicator}"/>
+    <apex:includeScript value="{!$Resource.ConsoleTabUtils}"/>
+    <apex:includeScript value="/soap/ajax/40.0/connection.js"/> <!--US314437 -->
+    <apex:includeScript value="/soap/ajax/40.0/apex.js"/> <!--US314437 -->
+
+    <div class="accountTab" style="margin-left:10px">
+        <apex:sectionHeader title="Verify Account" subtitle="{!Account.Name}" />
+    </div>
+
+    <apex:pageMessages id="messages" />
+    <!--US284435 start -->    
+    <apex:outputPanel id="fixedWireMessage">
+        <apex:pageMessage severity="error" summary="{!$Label.Fixed_Wire_Message}"
+                          rendered="{!Account.Has_Fixed_Wire__c}" />        
+    </apex:outputPanel>
+    <!--US284435 End -->
+    <apex:outputPanel id="specialHandlingMessage">
+        <apex:pageMessage severity="error" summary="{!$Label[specialHandlingRedirectLabel]}"
+                          rendered="{!isSpecialHandling}" />
+    </apex:outputPanel>
+    <!--US254084 start -->
+	
+	 <!-- US317497 Start -->
+     <apex:pageMessage severity="error" summary="{!$Label.CRIS_Message_Text}"  rendered="{!CRISMessageBln}" />
+     <apex:pageMessage severity="error" summary="{!$Label.Minnesota_CRISMessage_Text}"  rendered="{!MinnesotaCRISMessageBln}" />
+     <apex:pageMessage severity="error" summary="{!$Label.ENS_Message_Text}"   rendered="{!ENSMessageBln}" />
+     <apex:pageMessage severity="error" summary="{!$Label.Minnesota_ENSMessage_Text}"  rendered="{!MinnesotaENSMessageBln}" />
+    <!-- US317497 End -->
+	
+    <apex:outputPanel id="eshopHandlingMessage">
+        <apex:pageMessage severity="error" summary="{!$Label.EshopAccountHandling}" rendered="{!isEshopHandling }" />
+    </apex:outputPanel>
+    <!--US254084 End -->
+    <apex:outputPanel id="defaultServiceAddressMessage" >
+    <span style="color:red;font-weight: bold">
+    <apex:outputLabel value="{!$Label.defaultServiceAddressMessage}" for="DefaultServiceAddress" rendered="{!DisplayDefaultServiceAddressMessage}"/>
+
+    </span>
+    </apex:outputPanel>
+    <apex:outputPanel id="outerBlock" layout="block" style="margin:10px; margin-top:0px;" rendered="{!noacc}">
+        <apex:form id="aform" >
+        <apex:actionFunction action="{!researchAccount}" name="researchAccount" rerender="messages">
+            <apex:param name="CustAuthenticated" value=""/>
+            <apex:param name="initialIntent" value=""/>
+            <apex:param name="numberCalled" value=""/>
+            <apex:param name="avayaUcId" value=""/>
+        </apex:actionFunction>
+            <apex:actionFunction action="{!verifyAccount}" name="verifyAccount" rerender="messages,pg">
+            <apex:param name="CustAuthenticated" value=""/>
+            <apex:param name="initialIntent" value=""/>
+            <apex:param name="numberCalled" value=""/>
+            <apex:param name="avayaUcId" value=""/>
+        </apex:actionFunction>
+        <apex:actionFunction action="{!unverifyAccount}" name="unverifyAccount" rerender="messages">
+            <apex:param name="CustAuthenticated" value=""/>
+            <apex:param name="initialIntent" value=""/>
+            <apex:param name="numberCalled" value=""/>
+            <apex:param name="avayaUcId" value=""/>
+        </apex:actionFunction>
+			<apex:actionFunction action="{!setConsolebln}" name="setConsolebln" reRender="dummy" />
+            
+            <apex:actionFunction name="invokeRepairTktSummaryRequest" rerender="rprTktMessages" action="{!invokeRepairTktSummaryRequest}"/>        
+            <apex:outputPanel id="pg">
+            <apex:pageBlock id="pblock" >
+                    <apex:pageBlockButtons  id="pbButton"  location="top">
+                        <div style="width:100%">
+                        <div style="float:left;width:40%">
+                    <apex:outputLabel style="left: 29%;" styleClass="checkmark" value="" rendered="{!AND(UPPER($CurrentPage.parameters.CustAuthenticated) != 'NONE', UPPER($CurrentPage.parameters.CustAuthenticated) != 'UNDEFINED', UPPER($CurrentPage.parameters.CustAuthenticated) != 'NULL', $CurrentPage.parameters.CustAuthenticated != '')}"/>
+                        <apex:commandButton value="Verified" onclick="privateNamespace.handleClick(false, verifyAccount);" rerender="messages" rendered="{!!hideButtons}"/>
+                        <apex:commandButton value="Not Verified" onclick="privateNamespace.handleClick(false, unverifyAccount);" rerender="messages" rendered="{!!hideButtons}"/>
+                        <apex:commandButton value="Research Account" onclick="privateNamespace.handleClick(true, researchAccount);" rerender="messages" rendered="{!!hideButtons}"/>
+                        </div>
+                        <!--US295662 :Display Comm Preferences on Verification Page -->
+                        <div style="float:right;width:60%">
+						<table><tr>
+                                    <td style="color: red;font-size: 25px;font-weight: 800;width: 4px;"></td>
+                                    <td><b style="margin-top:2%;width:10%">{!$label.MultipleClicksOnButtonWarning}</b>  </td>
+                                    </tr>
+                                </table>
+                            <apex:outputPanel styleClass="commprfs" rendered="{!CPUpdateStatus}">
+                                <table><tr>
+                                    <td style="color: red;font-size: 25px;font-weight: 800;width: 4px;">&#33;</td>
+                                    <td><b style="margin-top:2%;width:10%">{!$Label.Confirmationof_CommPre}</b>  </td>
+                                    </tr>
+                                </table>
+                            </apex:outputPanel>
+                            <!-- <apex:outputPanel styleClass="commprfs" rendered="{!!CPUpdateStatus}">
+                                <table><tr>
+                                    <td><b>Contact Information Date Last Verified:&nbsp;<apex:outputField value="{!account.LVD__c}"/></b></td>
+                                    </tr>
+                                </table>
+                            </apex:outputPanel> -->
+                            </div>
+                        </div>
+                        <!--  <apex:pageBlockSection >
+                        </apex:pageBlockSection>
+                        <br/>
+							<apex:outputPanel id="Auth" style="text-align:center" >
+                                <apex:inputField id="AuthValue" value="{!Account.Enhanced_Authentication_Verified__c}">
+                                </apex:inputField>                                
+                                <apex:outputLabel style="text-align:center;font-size: 15px;font-weight: 80;width: 4px;" value="{!$ObjectType.Account.fields.Enhanced_Authentication_Verified__c.Label}" >
+                                </apex:outputLabel>
+                            </apex:outputPanel>
+                         -->
+                </apex:pageBlockButtons>
+                    <apex:outputPanel id="marketingMaterials" rendered="{!!isCommPrefsEditMode}">
+                    <apex:actionStatus id="gettingPromosStatus" startText="{!$Label.MarketingPromoSearchText}"/>
+                    <apex:pageBlockSection title="{!$Label.MarketingMaterials}"
+                                           rendered="{!promotions != null && promotions.size > 0}"
+                                           columns="1">
+                        <apex:pageBlockTable value="{!promotions}" var="promo" width="100%" cellPadding="30%">
+                            
+                            <apex:column headerValue="Key Code"> 
+                                <apex:outputlink value="#" onclick="window.open('{!promo.Promotions_Document__c}','_blank','width=810,height=310,toolbar=0,status=1,scrollbars=1,resizable=yes',!1);"> {!promo.Format_KeyCode__c} </apex:outputlink> 
+                            </apex:column>                             
+
+                            <apex:column value="{!promo.Offer__c}" />
+                            <apex:column value="{!promo.Main_TFN__c}" />
+                            <apex:column value="{!promo.Spanish_TFN__c}" />
+                            <apex:column value="{!promo.Offer_Start_Date__c}" />
+                            <apex:column value="{!promo.Offer_End_Date__c}" />
+                        </apex:pageBlockTable>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                    <apex:pageBlockSection columns="2" id="verificationInfo" rendered="{!!isCommPrefsEditMode}" collapsible="false" title="Verification Information">
+                    <!-- US272605 start -->
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="IVR Selection" />
+                        <apex:outputPanel >
+                            <apex:outputText value="{!callIntent }" rendered="{!UPPER(callIntent) != 'UNDEFINED'}"/> 
+                        </apex:outputPanel>                                         
+                    </apex:pageBlockSectionItem>
+                    <!-- US272605 End -->
+                    <apex:pageBlockSectionItem id="cpniBlock">
+                        <apex:outputLabel value="CPNI"/>
+                        <apex:outputPanel id="cpniPanel" >
+                            <div class = "requiredInput">
+                                <div class = "requiredBlock"></div>                        
+                                <apex:selectList id="cpniOptions" value="{!cpniSelected}" size="1">
+                                    <apex:selectOptions value="{!cpniOptions}"/>
+                                </apex:selectList> 
+                            </div>
+                        </apex:outputPanel>                      
+                    </apex:pageBlockSectionItem> 
+                    <apex:pageBlockSectionItem id="pCI">
+                        <apex:outputLabel value="Call Intent"/>
+                        <apex:outputPanel id="pCIPanel" >
+                            <div class = "requiredInput">
+                                <div class = "requiredBlock"></div>                        
+                                <apex:selectList id="callIntentOptions" value="{!callIntent}" size="1">
+                                    <apex:selectOptions value="{!callIntentOptions}"/>
+                                </apex:selectList> 
+                            </div>
+                        </apex:outputPanel>                            
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputLabel style="right: 40px; top: 2px;" styleClass="checkmark" value="" rendered="{!AND(UPPER($CurrentPage.parameters.CustAuthenticated) != 'NONE', UPPER($CurrentPage.parameters.CustAuthenticated) != 'UNDEFINED', UPPER($CurrentPage.parameters.CustAuthenticated) != 'NULL', $CurrentPage.parameters.CustAuthenticated != '')}"/>
+                            <apex:outputLabel value="SSN"/>
+                        </apex:outputPanel>
+                        <!-- US257032 Start--> 
+                        <apex:outputPanel id="ssnField">
+                            <span id="loadingSsn"><img height="11px" src="/img/loading.gif"/>  &nbsp; Retrieving SSN...</span>
+                            <apex:outputText value="{!maskedSsn}"/>
+                        </apex:outputPanel>
+                        <!-- US257032 End--> 
+                    </apex:pageBlockSectionItem>
+                        <!-- US257032 End -->
+                    </apex:pageBlockSection>
+                    <apex:pageBlockSection id="verificationInfoENS" rendered="{!AND(!isCrisBillingSource,!isCommPrefsEditMode)}">
+                        <!--US255144-Begin-->                    
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Account Num" />
+                            <apex:outputPanel >
+                                <apex:outputField value="{!Account.Account_Num__c}"/> 
+                            </apex:outputPanel>                                         
+                        </apex:pageBlockSectionItem>
+                        <apex:pageBlockSectionItem > <!--US272726 -->
+                            <apex:outputLabel value="Password" />
+                            <apex:outputPanel >
+                             <font color="red"><apex:outputField value="{!Account.Password__c}" style=""/> </font>
+                            </apex:outputPanel>
+                        </apex:pageBlockSectionItem>
+                        <!-- Account status load -->
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="{!$ObjectType.Account.fields.Account_Status__c.Label}" />
+                            <apex:outputPanel >
+                                <apex:outputText value="{!Account.Account_Status__c}" />
+                            </apex:outputPanel>
+                        </apex:pageBlockSectionItem>            
+                        <apex:outputField value="{!Account.Last_Bill_Amount__c}"/>
+                        <apex:outputField value="{!Account.Billing_Address_Info__c}"/>
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Last Payment Method" />
+                            <apex:outputPanel id="LastPaymentMethodOP">
+                                <span  id="LastPaymentMethodStatus"><img height="11px" src="/img/loading.gif"/>  &nbsp; Retrieving Last Payment Method...</span>
+                                <apex:outputText value="{!Account.Last_Payment_Method__c}" id="LastPaymentMethod"/>
+                            </apex:outputPanel>
+                        </apex:pageBlockSectionItem>
+                        <apex:pageBlockSectionItem rendered="{!isEnsembleBillingSource}"> <!--US272726 -->
+                            <apex:outputLabel value="Authorized Contact" style="font-weight:bold"/>
+                            <apex:actionRegion >
+                                <apex:selectList id="contactSelect" value="{!contactSelectedId}" size="1"  >
+                                    <apex:selectOptions value="{!contactOptions}"/>
+                                    <apex:actionSupport event="onchange"  oncomplete="privateNamespace.closePaymentimgStatus();"  reRender="verificationInfoENS"/>
+                                </apex:selectList> 
+                            </apex:actionRegion>
+                        </apex:pageBlockSectionItem>                     
+                        <apex:outputField value="{!Account.Date_of_Installation__c}"/>
+                        <apex:pageBlockSectionItem rendered="{!IF(OR(isOtherContactSelected,Account.Billing_Source__c='Ensemble' && contactSelectedId=='One time authorization'), TRUE, FALSE)}" id="sessionCallerBlock"> <!--US272726 ---->
+                            <apex:outputLabel value="Calling Party" rendered="{!selectedContact.AccountId != Account.Id}" /> 
+                            <apex:outputPanel rendered="{!selectedContact.AccountId != Account.Id}" >
+                            <div class = "requiredInput">
+                                <div class = "requiredBlock"></div>
+                                    <apex:inputText label="Calling Party" value="{!sessionCaller}" id="sessionCaller"  required="true"/>
+                            </div>
+                            </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                        <apex:inputField value="{!Account.Special_Instruction__c}" rendered="{!IF(OR(isOtherContactSelected,Account.Billing_Source__c='Ensemble' && contactSelectedId=='One time authorization'), FALSE, TRUE)}"/>
+                    <apex:pageBlockSectionItem rendered="{!IF(Account.Billing_Source__c='Ensemble' ,true,false)}"> <!--US272726 -->
+                            <apex:outputLabel value="" />
+                            <a target="_blank" href="{!$Setup.App_Launch__c.DEAP_Portal__c}">DEAP Portal</a>
+                    </apex:pageBlockSectionItem>
+                        <apex:inputField value="{!Account.Special_Instruction__c}" rendered="{!IF(OR(isOtherContactSelected,Account.Billing_Source__c='Ensemble' && contactSelectedId=='One time authorization'), TRUE, FALSE)}"/>
+                </apex:pageBlockSection>
+                    <apex:pageBlockSection rendered="{!AND(isCrisBillingSource,!isCommPrefsEditMode)}">
+                    <!--US255144-Begin-->                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Account Num" />
+                        <apex:outputPanel >
+                            <apex:outputField value="{!Account.Account_Num__c}"/> 
+                        </apex:outputPanel>                                         
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem rendered="{!isCrisBillingSource}">
+                        <apex:outputLabel value="Security Authentication Hint" />
+                        <apex:outputPanel id="authHint" >
+                            <span id="AuthenticationHintStatus"><img height="11px" src="/img/loading.gif"/>  &nbsp; Retrieving Hint...</span>
+                            <apex:outputText value="{!AuthenticationHint}"/>  
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    <!-- Account status load -->
+                    <apex:pageBlockSectionItem id="AccountStatus">
+                        <apex:outputLabel value="{!$ObjectType.Account.fields.Account_Status__c.Label}" />
+                        <apex:outputPanel >
+                            <!--<apex:outputPanel rendered="{!isCrisBillingSource}">-->
+                            <span class="dvarCcvLoad"><img height="11px" src="/img/loading.gif"/>  &nbsp; Retrieving Status...</span>
+                            <!--</apex:outputPanel>-->
+                            <apex:outputText value="{!Account.Account_Status__c}" />
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem rendered="{!isCrisBillingSource}">
+                        <apex:outputLabel value="Security Authentication Code" />
+                        <apex:outputPanel id="authCode" >
+                            <span id="AuthenticationPinStatus"><img height="11px" src="/img/loading.gif"/>  &nbsp; Retrieving Code...</span>
+                               <font color="red"><apex:outputText rendered="{!if(len(AuthenticationHint)>0,true,false)}"  value="{!AuthenticationPin}" style=""/></font>
+                            <!-- Added below for US293618 --> 
+                            &nbsp;
+                            <!-- US293618-->
+                           <apex:commandButton onclick="redirecttourl('{!accnumtrimmed}'); return false;" value="Send Code" title="Send Code" rendered="{!IF(isCrisBillingSource && (AuthenticationPin != null ) && accnumtrimmed != null,true,false) }" />
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    <!--US272695 start -->
+                    <apex:pageBlockSectionItem rendered="{!isCrisBillingSource}" >
+                    <apex:outputLabel value="Billing Name 2" />
+                        <apex:outputText value="{!billingname2}"  rendered="{!isCrisBillingSource}"/>
+                    </apex:pageBlockSectionItem>
+                    <!--US272695 end -->
+                    <apex:pageBlockSectionItem rendered="{!isCrisBillingSource}" >
+                        <apex:outputLabel value="Credit Information" />
+                        <apex:outputText value="{!Account.Credit_Information__c}"/>  
+                    </apex:pageBlockSectionItem>
+                    <apex:outputField value="{!Account.Billing_Address_Info__c}"/>
+                    <apex:outputField value="{!Account.Last_Bill_Amount__c}"/>
+                        <apex:pageBlockSectionItem ></apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem id="LastPaymentMethodPBSI">
+                        <apex:outputLabel value="Last Payment Method" />
+                        <apex:outputPanel id="LastPaymentMethodOP">
+                            <span  id="LastPaymentMethodStatus"><img height="11px" src="/img/loading.gif"/>  &nbsp; Retrieving Last Payment Method...</span>
+                            <apex:outputText value="{!Account.Last_Payment_Method__c}" id="LastPaymentMethod"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                        <apex:pageBlockSectionItem ></apex:pageBlockSectionItem>
+                    <apex:outputField value="{!Account.Date_of_Installation__c}"/>
+                </apex:pageBlockSection>
+                   <apex:iframe src="/apex/Communication_Preferences?Id={!Account.Id}&LVD={!Account.LVD__c}&isEditMode={!isCommPrefsEditMode}&displayVerifyInfo=FALSE&ispopUp=FALSE&isConsole={!isConsole}" height="300" />
+            </apex:pageBlock>
+            </apex:outputPanel>
+            <apex:actionFunction name="invokeDVARCVVRequest" action="{!invokeDVARCVVRequest}" oncomplete="executeGEOESRequest();" reRender="ssnField,authHint,authCode,geoesAddressesOP" rendered="{!NOT(LEFT($Label.Address_Validation_GEOES,2)=='0;')}"/> 
+            <apex:actionFunction name="invokeDVARCVVRequest" action="{!invokeDVARCVVRequest}" oncomplete="invokeDVARIARequest();" reRender="ssnField,authHint,authCode" rendered="{!LEFT($Label.Address_Validation_GEOES,2)=='0;'}"/>
+            <apex:actionFunction name="invokeDVARIARequest" action="{!CallDVAR_IA}" oncomplete="privateNamespace.closeSSNStatus();"/>
+            <!-- Murali - US264568 End-->                            
+            <apex:actionFunction name="invokeEPWFPaymentservice" action="{!invokeEPWFPaymentservice}" status="Paymentstatus" oncomplete="privateNamespace.closePaymentimgStatus();" reRender="verificationInfo"/>
+            <apex:actionFunction name="getPromos" action="{!setMatchingPromos}" status="gettingPromosStatus"
+                                 reRender="marketingMaterials" />
+			<apex:actionFunction name="redirectToAcc" action="{!CommPrefRedirect}"/>
+        </apex:form>
+        <apex:pageBlock title="Service Addresses">
+            <apex:pageBlockTable value="{!serviceAddresses}" var="serviceAddress">
+                <apex:column value="{!serviceAddress.Name}"/>
+                <apex:column value="{!serviceAddress.Service_Address_Info__c}"/> 
+            </apex:pageBlockTable>
+        </apex:pageBlock>
+        <!--US314437 start -->   
+        <apex:outputPanel id="showResponseStatus">
+            <div id="modal-responses" style="display:{!showResponseStatus}"> 
+                <b>Responses :</b> <span id="resultContainer"></span>
+            </div>
+            <div id="modal-content" style="display:{!showResponseStatus}">
+                    <p>
+                        <b>Status :</b><span id="modal-content-status"></span>
+                    </p> 
+            </div>
+            <div id="modal-txtAPICallsToMake" style="display:{!showResponseStatus}">
+                <p>
+                    <b>Calls to Make :</b><span id="txtAPICallsToMake"></span>
+                </p> 
+            </div>
+        </apex:outputPanel> 
+        <apex:outputPanel id="geoesAddressesOP">
+            <span  id="DvarccvServiceAddr" style="display:none">{!geoesAddressesJSON}</span>
+        </apex:outputPanel>        
+    </apex:outputPanel>
+    <!--CSICC-38519 --start  -->
+    </apex:outputPanel>
+    <div>
+        <apex:pageMessage severity="error" summary=" Salesforce Classic has been retired.  Please access Salesforce Lightning."/>
+    </div>
+    <!--CSICC-38519 --end  --> 
+    <script type="text/javascript">
+        function executeGEOESRequest() {
+            //Do remoteaction to call GEOES
+            Visualforce.remoting.timeout = 120000; //TODO: May need to bump up...perhaps multiply by count of calls to make
+            var apiNumber = 0;
+            var DvarccvServiceAddr = document.getElementById("DvarccvServiceAddr").innerHTML;
+            var accLegacyStack = '{!accLegacyStack}';
+            var AddressValidationGEOES = '{!$Label.Address_Validation_GEOES}';
+            var AddressValidationGEOESSplit = AddressValidationGEOES.split(';');
+            var totalAPICallsToMake = Number(AddressValidationGEOESSplit[0]);
+            var doSvcAddressUpdates = AddressValidationGEOESSplit[2]; 
+            var accountId = '{!$CurrentPage.parameters.Id}';
+            var APICallsToMake = document.getElementById("txtAPICallsToMake") ; 
+            var resultContainer = document.getElementById("resultContainer") ; 
+            var modalcontentstatus = document.getElementById("modal-content-status") ; 
+            //if (boolean(AddressValidationGEOESSplit[1])) {
+            //    APICallsToMake.style.display="block";
+            //	resultContainer.style.display="block";
+            //    modalcontentstatus.style.display="block";
+            //} else {
+            //    APICallsToMake.style.display="none";
+            //    resultContainer.style.display="none";
+            //    modalcontentstatus.style.display="none";
+            //} 
+            var startTime,endTime,elapsedSecond;  
+            var srvId = ''; 
+            var srvStreet = ''; 
+            var addressLine2 = ''; 
+            var srvCity = '';  
+            var srvState = '';  
+            var srvZipCode = '';  
+            var srvAddressSources = ''; 
+            var records;
+            var DVARrecords;
+            var dvarrecord;
+            var DVARCCVAddressSeq = 0;
+            if (totalAPICallsToMake != 0) {
+                startRequest();
+            } else {
+                endCalls();
+            }
+            function startRequest(){ 
+                //resultContainer.innerHTML=resultContainer.innerHTML+'DVAR RESP:'+DvarccvServiceAddr;   
+                if (DvarccvServiceAddr == '') {
+                    // Read Locations 
+                    //APICallsToMake.innerHTML=APICallsToMake.innerHTML+'START Service Call'; 
+                    if (doSvcAddressUpdates=='true') { 
+	                    try{
+	                        sforce.connection.sessionId = '{!$Api.Session_ID}';
+	                        var result = sforce.connection.query("Select Id, Address_Sources__c, Service_Address_Source_Id__c,Service_Street__c,Service_Street_2__c,Service_City__c, Service_State__c, Service_Postal_Code__c FROM Service_Address__c where Billing_Account__c='" + accountId + "' AND Active__c=True ORDER BY Primary_Service_Address__c DESC, CreatedDate DESC LIMIT " + AddressValidationGEOESSplit[0]);
+	                        //resultContainer.innerHTML=resultContainer.innerHTML+'SA RESULT:'+result;
+	                        records = result.getArray("records");
+	                        resultContainer.innerHTML=resultContainer.innerHTML+'Using Service Addresses...';
+	                        //APICallsToMake.innerHTML=APICallsToMake.innerHTML+'END Service Call'; 
+	                    } catch(e){ 
+	                        resultContainer.innerHTML=resultContainer.innerHTML+'<br /> Service Address Call Fail:'+ e ;  
+	                    }
+                    } else {
+                        records='';
+                        DVARrecords = '';
+                    }	                    
+                } else {
+                    // Loop thru to show DVAR results
+                    records = '';
+                    resultContainer.innerHTML=resultContainer.innerHTML+'Using DVAR RESP:'+DvarccvServiceAddr;  
+                    DVARrecords = JSON.parse(DvarccvServiceAddr);
+                    //resultContainer.innerHTML=resultContainer.innerHTML+'SA RECORDS:'+DVARrecords;
+                    //resultContainer.innerHTML=resultContainer.innerHTML+'DVAR LENGTH:'+DVARrecords.length;  
+                    //for (var i=0; i< DVARrecords.length; i++) {
+                    //    dvarrecord = DVARrecords[i];
+                    //    resultContainer.innerHTML=resultContainer.innerHTML+'<br /> dvarrecord:' + i + " -- " + dvarrecord.Service_Street__c
+                    //    + dvarrecord.Service_City__c + dvarrecord.Service_State__c + dvarrecord.Service_Postal_Code__c;  
+                    //}
+                }
+
+                if (records.length>=apiNumber+1) { //TODO: Refactor as function
+                    // Use Service Addresses
+                    if (totalAPICallsToMake > records.length) {
+                        totalAPICallsToMake = records.length;    
+                    }
+                    srvId = records[apiNumber].Id;
+                    srvStreet =  records[apiNumber].Service_Street__c;
+                    addressLine2 = records[apiNumber].Service_Street_2__c;
+                    srvCity = records[apiNumber].Service_City__c;
+                    srvState = records[apiNumber].Service_State__c;
+                    srvZipCode =  records[apiNumber].Service_Postal_Code__c;
+                    srvAddressSources = records[apiNumber].Address_Sources__c;
+                } else {
+                    //Use DVAR Response
+                    if (DVARrecords.length>=apiNumber+1) { //TODO: Refactor as function
+                        if (totalAPICallsToMake > DVARrecords.length) {
+                            totalAPICallsToMake = DVARrecords.length;    
+                        }
+                        dvarrecord = DVARrecords[apiNumber];
+                        DVARCCVAddressSeq = apiNumber;
+                        srvStreet = dvarrecord.Service_Street__c;
+                        addressLine2 = '';
+                        srvCity = dvarrecord.Service_City__c;
+                        srvState = dvarrecord.Service_State__c;
+                        srvZipCode = dvarrecord.Service_Postal_Code__c;
+                        srvAddressSources = '';
+                    }
+                }
+                if (records=='' && DvarccvServiceAddr=='') {
+                    endCalls();
+                } else {
+	                submitCalls(apiNumber, srvId, accountId, srvStreet, addressLine2, srvCity, srvState, srvZipCode, srvAddressSources);
+	            }
+            }
+            
+            function submitCalls(count, srvId, accountId, srvStreet, addressLine2, srvCity, srvState, srvZipCode, srvAddressSources){
+                modalcontentstatus.innerHTML='Callback initiated for API number - '+count; 
+                startTime = new Date().getTime(); 
+                if ((srvAddressSources== null || !srvAddressSources.includes('CLC')) && apiNumber < totalAPICallsToMake) {  
+                    AddressValidation.beginCalloutForSearch(srvId, accountId, srvStreet, addressLine2, srvCity, srvState, srvZipCode, function (result, event) {
+                            endTime = new Date().getTime(); 
+                            elapsedSecond = (endTime - startTime) / 1000; 
+                            modalcontentstatus.innerHTML='Callback completed';  
+                            if (event.status) { 
+                                resultContainer.innerHTML=resultContainer.innerHTML+'<br /> Time Taken for API '+ apiNumber +' : ' + srvStreet +' : '+elapsedSecond+' sec , Response : '+result;  
+                            } 
+                            // If address already contains CLC or if apiNumber < label.CLC_limit then no callout and done ==> go to endCalls. 
+                            if((srvAddressSources== null || !srvAddressSources.includes('CLC')) && apiNumber < (totalAPICallsToMake-1) && result != 'Done'){
+                                apiNumber++; 
+                                if (records.length>=apiNumber+1) { //TODO: Refactor as function
+                                    if (totalAPICallsToMake > records.length) {
+                                        totalAPICallsToMake = records.length;    
+                                    }
+                                    srvId = records[apiNumber].Id;
+                                    srvStreet =  records[apiNumber].Service_Street__c;
+                                    addressLine2 = records[apiNumber].Service_Street_2__c;
+                                    srvCity = records[apiNumber].Service_City__c;
+                                    srvState = records[apiNumber].Service_State__c;
+                                    srvZipCode =  records[apiNumber].Service_Postal_Code__c;
+                                    srvAddressSources = records[apiNumber].Address_Sources__c;
+                                } else {
+                                    //Use DVAR Response
+                                    if (DVARrecords.length>=apiNumber+1) { //TODO: Refactor as function
+                                        if (totalAPICallsToMake > DVARrecords.length) {
+                                            totalAPICallsToMake = DVARrecords.length;    
+                                        }
+                                        dvarrecord = DVARrecords[apiNumber];
+                                        DVARCCVAddressSeq = apiNumber;
+                                        srvStreet = dvarrecord.Service_Street__c;
+                                        addressLine2 = '';
+                                        srvCity = dvarrecord.Service_City__c;
+                                        srvState = dvarrecord.Service_State__c;
+                                        srvZipCode = dvarrecord.Service_Postal_Code__c;
+                                        srvAddressSources = '';
+                                    }
+                                }
+                                submitCalls(apiNumber,srvId, accountId, srvStreet, addressLine2, srvCity, srvState, srvZipCode, srvAddressSources);
+                            }else{
+                                endCalls();
+                            }
+                        }
+                    )
+                } else {
+                    endCalls();
+                }
+            }
+            
+            function endCalls(){ 
+                // Call DVAR_IA once complete
+                AccountVerificationExtension.UpdateDVAR_IARecord(srvId, DVARCCVAddressSeq, function (result, event) {
+                 });
+                invokeDVARIARequest();
+                resultContainer.innerHTML=resultContainer.innerHTML+'<br /> DVAR_IA Called - All Done';
+           }
+        }
+    </script>
+    <!--US314437 end -->  
+        
+    <script>
+	window.onload = function(){
+        if (sforce.console.isInConsole()) {
+            setConsolebln();
+        }
+    }
+	
+	var listener = function (result) {
+            if(result.message === '{!actid}'){
+                redirectToAcc();
+            }
+        };
+        //Add a listener for the 'SampleEvent' event type
+    sforce.console.addEventListener('AccRedirectEvent', listener);
+		
+    const privateNamespace = (function(){
+        sforce.console.setTabTitle('{! JSENCODE(Account.Name) }');
+        sforce.console.focusSidebarComponent(JSON.stringify({componentType: 'VISUALFORCE', pageName: 'CustomerNotes'}));
+        function closePaymentimgStatus(){
+            //document.getElementById('PaymentimgStatus').style.display = 'none';
+            // document.getElementById('AccountStatusSpinner').style.display = 'none';
+            const loadGifs = document.querySelectorAll('.dvarCcvLoad');
+            for (let i = 0; i < loadGifs.length; i++) {
+                loadGifs[i].style.display = 'none';
+            }
+
+            if(document.getElementById('LastPaymentMethodStatus')){
+                document.getElementById('LastPaymentMethodStatus').style.display = 'none';
+            }
+        }
+
+        if ('{!JSENCODE(callIntent)}' === 'Marketing Campaign') {
+            getPromos();
+        }
+
+        if('{!Account.Account_Status__c}'.includes('Write') || '{!Account.Account_Status__c}' == 'Final' || '{!Account.Account_Status__c}' == 'OTN'){
+            closePaymentimgStatus();
+            if(document.getElementById('loadingSsn')){
+                document.getElementById('loadingSsn').innerHTML = "Info is currently unavailable";
+            }
+            if(document.getElementById('AuthenticationHintStatus')){
+                document.getElementById('AuthenticationHintStatus').innerHTML = "Info is currently unavailable";
+            }            
+            if(document.getElementById('AuthenticationPinStatus')){
+                document.getElementById('AuthenticationPinStatus').innerHTML = "Info is currently unavailable";
+            }
+        }else{
+            invokeDVARCVVRequest();
+            invokeEPWFPaymentservice();
+	            if("{!$Label.Disable_TMS_Webservice_Calls}"==="false"){
+	                invokeRepairTktSummaryRequest();
+	            }                               
+        }
+
+        const accountTabObjectId = '{!Account.id}';
+        const cpcBuilder = new CrossPageCommunicator.Builder().tabObjectId(accountTabObjectId);
+        const acctVerCommer = cpcBuilder.page('AccountVerification').build();
+        acctVerCommer
+        .setItem('hasEnteredAcct', false)
+        .setItem('wasResearchClicked', false)
+        .setItem('loopQual', true)
+        .setItem('ucid', '{!avayaUcId}'); //Added for HD00010633149 
+        
+        //label
+        const CALL_DATA_KEY = 'callData';
+        //label
+        const MULTIPLE_MATCHING_ACCOUNTS_FAKE_ID = 'MultipleMatchAcctIds';
+        const ctiCommer = cpcBuilder.tabObjectId(MULTIPLE_MATCHING_ACCOUNTS_FAKE_ID).page('CtiComponent').build();
+        let callDataArr = [];
+        let callData = null;
+        //if cti did not launch current account, agent possibly came from search
+        if({! NOT(didCtiLaunchMe) }){
+            callDataArr = ctiCommer.getItem(CALL_DATA_KEY);
+            if(callDataArr && Array.isArray(callDataArr) && callDataArr.length > 0){
+               /*@Narasimha -start*/
+               	let matchingIndex = -1;
+				callDataArr.forEach(function(call, i){
+					if(call.tabObjIds && call.tabObjIds[0] && call.tabObjIds[0].includes(accountTabObjectId)){
+						matchingIndex = i; //pass data to controller 
+						callData = call.info;
+					} 
+				});
+                //remove entry from index. splice is the method
+                 callDataArr.splice(0, matchingIndex+1);
+               /* end */
+            }
+        }
+
+        function handleClick(wasResearchClicked, onValidated){
+			var buttons = document.getElementsByClassName("btn");
+            for (var i = 0; i < buttons.length; i++) {
+                buttons[i].disabled = true;
+                buttons[i].classList.add('btnDisabled');
+            }
+            const sessionCaller = document.getElementById('{!$Component.aform.pblock.verificationInfo.sessionCallerBlock.sessionCaller}');
+            acctVerCommer
+            .setItem('loopQual', true)
+            .setItem('authorizedContact', (sessionCaller ? sessionCaller.value : ''))
+            .setItem('hasEnteredAcct', true)
+            .setItem('ucid', '{!avayaUcId}')
+            .setItem('wasResearchClicked', wasResearchClicked);
+            
+            if({! NOT(didCtiLaunchMe) }){
+                ctiCommer.setItem(CALL_DATA_KEY, callDataArr);
+                if(callData){
+                    acctVerCommer.setItem('ucid', callData.ucid);
+                }
+            } 
+
+
+            if(document.cookie.indexOf(accountTabObjectId)==-1) {
+                // cookie doesn't exist, create it now
+                document.cookie = accountTabObjectId+'=1';
+            }
+
+            if(wasResearchClicked || isValid()){
+                if(callData){
+                    onValidated(callData.custAuthenticated, callData.initialIntent, callData.numberCalled, callData.ucid);
+                }
+                else{
+                    onValidated();
+                }
+                sforce.console.getEnclosingPrimaryTabId(function(pTabResult){
+                    let accTabId = pTabResult.Id;
+                    sforce.console.disableTabClose(true,accTabId);
+                });
+		}else{
+                for (var i = 0; i < buttons.length; i++) {
+                    buttons[i].disabled = false;
+                    buttons[i].classList.remove('btnDisabled');
+                }
+            }
+            return false;
+        }
+
+        function closeSSNStatus(){
+            //US257032 Start
+            if(document.getElementById('loadingSsn')){
+                document.getElementById('loadingSsn').style.display = 'none';
+            }
+            if(document.getElementById('AuthenticationHintStatus')){
+                document.getElementById('AuthenticationHintStatus').style.display = 'none';
+            }
+            
+            if(document.getElementById('AuthenticationPinStatus')){
+                document.getElementById('AuthenticationPinStatus').style.display = 'none';
+            }
+            //US257032 End   
+        }//US257032 End  
+  
+
+        function validateBillingAddressFields(crisTerritory, TextLength, TextValue){
+            var vCrisTerritory = crisTerritory;
+            var vTextLength = TextLength;
+            var vTextValue = TextValue;
+            //alert(Id);
+    
+            if(vCrisTerritory == 'CRISE'){
+                if(vTextLength.length > 20){
+                    alert('Field Length for Eastern should not exceed 20 characters!');
+                    vTextValue.value = vTextValue.value.substring(0, 20);
+                }
+            }else 
+            if(vCrisTerritory == 'CRISW'){
+                if(vTextLength.length > 30){
+                    alert('Field Length for Western should not exceed 30 characters!');
+                    vTextValue.value = vTextValue.value.substring(0, 30);
+                }
+            }else 
+            if(vCrisTerritory == 'CRISC'){
+                if(vTextLength.length > 23){
+                    alert('Field Length for Central should not exceed 23 characters!');
+                    vTextValue.value = vTextValue.value.substring(0, 23);
+                }
+            }        
+        }
+
+        function isValid() {
+            //const phone = document.getElementById('{!$Component.aform.pblock.verificationInfo.pBSI.contactNum}').value;
+            const callIntent = document.getElementById('{!$Component.aform.pblock.verificationInfo:pCI:callIntentOptions}');
+            //var fullAuthentication = document.getElementById('{!$Component.aform.pblock.pbButton:AuthValue}').checked;            
+            if(callIntent){
+            const callIntentSelectedOption = callIntent.options[callIntent.selectedIndex].value;
+            let msg = "";
+            
+            if (!callIntentSelectedOption) {
+                msg += "Please select a Call Intent\n";
+            }
+            /*else if(fullAuthentication == false){
+                msg += "Please Check In Customer Fully Authenticated Flag\n";            
+            }
+              */  
+            /*
+            if(!validTN(phone)){
+                msg += "Please enter valid phone number.";
+            }
+            */
+            if (msg) {
+                alert (msg);
+                return false;
+            }
+            }
+            return true;
+        }
+
+        return {
+            closeSSNStatus : closeSSNStatus,
+            handleClick : handleClick,
+            closePaymentimgStatus : closePaymentimgStatus,
+            validateBillingAddressFields : validateBillingAddressFields
+        }
+    })();
+    
+	//US293618- Start
+	   function redirecttourl(accnum)
+	    {
+			var url = 'https://eam.centurylink.com/eam/retrieveAuthCode.do?accountNo='+accnum;
+					 
+			
+			window.open(url, "_blank"); 
+	        
+		}
+	//US293618- End
+    </script>
+
+
+</apex:page>

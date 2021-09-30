@@ -1,0 +1,4 @@
+.THIS .slds-rich-text-editor__textarea:last-child .slds-rich-text-area__content{
+
+    min-height:14rem;
+}

@@ -1,0 +1,126 @@
+<template>
+    <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+        aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+        <div class="slds-modal__container" style="max-width: none;">
+            <!-- Modal/Popup Box LWC header here -->
+            <header class="slds-modal__header">
+                <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close"
+                    onclick={closeModal}>
+                    <lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse" size="small">
+                    </lightning-icon>
+                    <span class="slds-assistive-text">Close</span>
+                </button>
+                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Send RCCs</h2>
+            </header>
+            <!-- Modal/Popup Box LWC body starts here -->
+            <div style="height: 1000px;" class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                <template if:true={Loading}>
+                    <div class="demo-only demo-only demo-only_viewport" style="height: 4rem; position: relative;">
+                        <div role="status" style="z-index: 10" class="slds-spinner slds-spinner_medium">
+                            <span class="slds-assistive-text">Loading</span>
+                            <div class="slds-spinner__dot-a"></div>
+                            <div class="slds-spinner__dot-b"></div>
+                        </div>
+                    </div>
+                </template>
+                <template if:true={resp}>
+                    <lightning-input onchange={accountValueChange} data-id="accountNumberField" label="Account Number"
+                        value={resp.AccountNumber}></lightning-input>
+                    <template if:true={showSubmitButton}>
+                        <lightning-input onchange={changingOrderVal} value={orderNumber} data-id="orderField"
+                            label="Order Number"></lightning-input>
+
+                        <lightning-radio-group name="radioGroup" label="Delivery Method" options={options}
+                            value={acceptType} type="radio" onchange={changingRadioGroup}></lightning-radio-group>
+
+                        <div>
+                            <template if:true={isEmailSelected}>
+                                <lightning-input data-id="emailField" label="Email" value={resp.PersonEmail}>
+                                </lightning-input>
+                                <lightning-input data-id="saveAccountField" label={getCurrentSaveLabel} type="checkbox">
+                                </lightning-input>
+                            </template>
+                            <template if:true={isSMSSelected}>
+                                    <div style="padding: 15px 0px;">
+                                        <lightning-formatted-text style="font-size:16px;"
+                                            value={getSMSVerbiage}>
+                                        </lightning-formatted-text>
+
+                                        <lightning-input style="padding-top:15px" checked={dummyVal}
+                                            data-id="SMSacknowledgeStatement"
+                                            label="I acknowledge I read the above statement to the customer"
+                                            type="checkbox"></lightning-input>
+                                    </div>
+                                <lightning-input data-id="smsField" label="Mobile Number" value={resp.SMS_Number__pc}>
+                                </lightning-input>
+
+                                <lightning-input data-id="saveAccountField" label={getCurrentSaveLabel} type="checkbox">
+                                </lightning-input>
+                            </template>
+                        </div>
+                        <template if:true={showVerbalAccept}>
+                            <div style="padding: 15px 0px;">
+                                <lightning-formatted-text style="font-size:16px;"
+                                    value="You will receive applicable credits for services you are removing today.  However, the quote I am sending you does not include these credits.  The credits will appear on future invoices.">
+                                </lightning-formatted-text>
+
+                                <lightning-input style="padding-top:15px" checked={dummyVal}
+                                    data-id="CRISacknowledgeStatement"
+                                    label="I acknowledge I read the above statement to the customer"
+                                    type="checkbox"></lightning-input>
+                            </div>
+                        </template>
+                        <template if:false={isDisconnect}>
+                            <template if:true={isCRISacc}>
+                                <lightning-input-rich-text class="richTextVal" height="1000px" onchange={changeVal}
+                                    onkeypress={handleKeyDown} formats={formats} label-visible=true
+                                    data-id="RichTextInput" label="HTML Text Body" value={myVal}>
+                                </lightning-input-rich-text>
+                            </template>
+
+                        </template>
+                        <template if:true={isDisconnect}>
+                            <lightning-input data-id="completionDate" placeholder="MM/DD/YYYY" onchange={completionDateChange} name="input2" label="Billed Through Date" ></lightning-input>
+                            <lightning-input data-id="disconnectDate" placeholder="MM/DD/YYYY" onchange={disconnectDateChange} name="input1" label="Disconnect Date" ></lightning-input>
+                            <div data-id="disconnectHTML" class="slds-p-vertical_medium" style="margin:auto;">
+                                <table border="0" cellpadding="0" cellspacing="0" style='width:952px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-variant-numeric: inherit; font-variant-east-asian: inherit; font-weight: 400; font-stretch: inherit; font-size: 1.5vh; line-height: inherit; font-family: "Segoe UI", "Segoe UI Web (West European)", "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif; color: rgb(0, 0, 0); letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-style: initial; text-decoration-color: initial; border-collapse: collapse; margin-left: 0.25pt;'>
+                                    <tbody>
+                                        <tr style="height: 21.55pt;">
+                                            <td style="white-space: normal !important; height: 21.55pt; padding: 0px 5.4pt; border: 1pt solid windowtext;" valign="top">
+                                                <p style="font-family: Calibri, sans-serif; margin: 0px;"><span style="margin: 0px; padding: 0px; border: 0px; font-style: inherit; font-variant: inherit; font-weight: inherit; font-stretch: inherit;  line-height:inherit; font-family: Arial, sans-serif; vertical-align: baseline; color: inherit;"><span class="markc1wbtv0c7" data-markjs="true" data-ogab="" data-ogac="" data-ogsb="" data-ogsc="" style="margin: 0px; padding: 0px; border: 0px; font: inherit; vertical-align: baseline; color: inherit;">Disconnect Date</span></span></p>
+                                            </td>
+                                            <td style="white-space: normal !important; height: 21.55pt; padding: 0px 5.4pt; border-width: 1pt; border-style: solid solid solid none; border-color: windowtext;" valign="top">
+                                                <p style="font-family: Calibri, sans-serif; margin: 0px;"><span data-ogsc="black" style="margin: 0px; padding: 0px; border: 0px; font-style: inherit; font-variant: inherit; font-weight: inherit; font-stretch: inherit; line-height: inherit; font-family: Arial, sans-serif; vertical-align: baseline; color: black;">Your CenturyLink services are billed through {completionDate}. Your service will be disconnected on {disconnectDate}.&nbsp;</span></p>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                        </template>
+                        
+
+                    </template>
+                    <div data-id="manualRichText" lwc:dom="manual"></div>
+                    <br />
+
+
+                </template>
+
+            </div>
+            <!-- Modal/Popup Box LWC footer starts here -->
+            <footer class="slds-modal__footer">
+                <button class="slds-button slds-button_neutral" onclick={closeModal} title="Cancel">Cancel</button>
+                <template if:true={showSubmitButton}>
+                    <button class="slds-button slds-button_brand" onclick={sendRCC} title="Send">Send</button>
+                </template>
+                <template if:false={showSubmitButton}>
+                    <button class="slds-button slds-button_brand" onclick={doPreviewCall}
+                        title="Preview">Preview</button>
+                </template>
+
+            </footer>
+        </div>
+    </section>
+    <div class="slds-backdrop slds-backdrop_open"></div>
+</template>

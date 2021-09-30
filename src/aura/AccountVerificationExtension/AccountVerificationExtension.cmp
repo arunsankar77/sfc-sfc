@@ -1,0 +1,81 @@
+<aura:component implements="flexipage:availableForRecordHome,force:hasRecordId" access="global" controller="AccountVerificationExtensionLEX" >
+    <aura:attribute name="accountRecord" type="Object"/>
+    <aura:attribute name="recordError" type="String"/>
+    <aura:attribute name="isLoaded" type="boolean" default="false"/>
+    <aura:attribute name="SSN" type="String" default=""/>
+    <aura:attribute name="Hint" type="String" default=""/>
+    <aura:attribute name="AuthenticationPin" type="String" default=""/>
+    <aura:attribute name="isCCVDone" type="boolean" default="false"/>
+    <force:recordData aura:id="recordLoader"
+                      layoutType="FULL"                
+                      recordId="{!v.recordId}"
+                      targetFields="{!v.accountRecord}"
+                      targetError="{!v.recordError}"
+                      recordUpdated="{! c.doInit }"/>  
+    <div class="slds-p-around--none slds-panel__section">
+        <div class="slds-section slds-is-open">
+            <div class="slds-grid slds-grid slds-wrap slds-grid--pull-padded">
+                <div class="slds-p-horizontal--small slds-size--1-of-2">
+                    <div class="slds-form-element slds-hint-parent slds-has-divider--bottom slds-p-around--x-small hasDiv">
+                        <label class="slds-form-element__label"> Name </label>
+                        <div class="slds-form-element__control" style="min-height: 18px;">
+                            <ui:outputText class="slds-output" value="{!v.accountRecord.Name}" />
+                        </div>
+                    </div>
+                </div>
+                <div class="slds-p-horizontal--small slds-size--1-of-2">
+                    <div class="slds-form-element slds-hint-parent slds-has-divider--bottom slds-p-around--x-small hasDiv">
+                        <label class="slds-form-element__label"> SSN </label>
+                        <div class="slds-form-element__control" style="min-height: 18px;">
+                            <aura:if isTrue="{!v.isCCVDone}">
+                                <ui:outputText class="slds-output" value="{!v.SSN}" />
+                                <aura:set attribute="else">
+                                    <lightning:spinner alternativeText="Loading" size="small" />
+                                </aura:set>
+                            </aura:if> 
+                        </div>
+                    </div>
+                </div>
+                <div class="slds-p-horizontal--small slds-size--1-of-2">
+                    <div class="slds-form-element slds-hint-parent slds-has-divider--bottom slds-p-around--x-small hasDiv">
+                        <label class="slds-form-element__label"> Hint </label>
+                        <div class="slds-form-element__control" style="min-height: 18px;">
+                            <aura:if isTrue="{!v.isCCVDone}">
+                                <ui:outputText class="slds-output" value="{!v.Hint}" />
+                                <aura:set attribute="else">
+                                    <lightning:spinner alternativeText="Loading" size="small" />
+                                </aura:set>
+                            </aura:if> 
+                        </div>
+                    </div>
+                </div>
+                <div class="slds-p-horizontal--small slds-size--1-of-2">
+                    <div class="slds-form-element slds-hint-parent slds-has-divider--bottom slds-p-around--x-small hasDiv">
+                        <label class="slds-form-element__label"> Password </label>
+                        <div class="slds-form-element__control" style="min-height: 18px;">
+                            <aura:if isTrue="{!v.isCCVDone}">
+                                <ui:outputText class="slds-output" value="{!v.AuthenticationPin}" />
+                                <aura:set attribute="else">
+                                    <lightning:spinner alternativeText="Loading" size="small" />
+                                </aura:set>
+                            </aura:if> 
+                        </div>
+                    </div>
+                </div>
+                <div class="slds-p-horizontal--small slds-size--1-of-2">
+                    <div class="slds-form-element slds-hint-parent slds-has-divider--bottom slds-p-around--x-small hasDiv">
+                        <label class="slds-form-element__label"> Account Status </label>
+                        <div class="slds-form-element__control" style="min-height: 18px;">
+                            <aura:if isTrue="{!v.isCCVDone}">
+                                <ui:outputText class="slds-output" value="{!v.accountRecord.Account_Status__c}" />
+                                <aura:set attribute="else">
+                                    <lightning:spinner alternativeText="Loading" size="small" />
+                                </aura:set>
+                            </aura:if> 
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</aura:component>

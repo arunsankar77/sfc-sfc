@@ -1,0 +1,77 @@
+<template>
+    <lightning-card title="Create DOCS Task" icon-name="standard:case">
+        <div class="slds-p-bottom_large slds-p-left_large" style="width:500px">
+        <template if:true={isEdit}>
+            <lightning-record-edit-form
+                    id="recordCreateForm"
+                    object-api-name="Case"
+                    columns="2"
+                    onsuccess={onload}>
+            <lightning-messages></lightning-messages>
+            
+            <lightning-input-field field-name="RecordTypeId" value={RecordType}>
+            </lightning-input-field>
+            <lightning-input-field field-name="Subject" value={Subject}>
+            </lightning-input-field>
+            <lightning-input-field field-name="Priority" value={Priority}>
+            </lightning-input-field>
+            <lightning-input-field field-name="Origin" value={Origin}>
+            </lightning-input-field>
+            <lightning-input-field field-name="Reason" value={Reason}>
+            </lightning-input-field>
+            <lightning-input-field field-name="Description" value={Desc}>
+            </lightning-input-field>
+            <lightning-input-field field-name="Full_Service_Address__c" value={Full_Service_Address}>
+            </lightning-input-field>
+            <lightning-input-field field-name="Case_Submitter__c" value={CaseSubmitter}>
+            </lightning-input-field>
+            <lightning-input-field field-name="Telephone_Number__c" value={ContactPhone}>
+            </lightning-input-field>
+            <lightning-button-group>
+                <lightning-button label="Save" onclick={handleClick}></lightning-button>
+            </lightning-button-group>
+            </lightning-record-edit-form>
+        </template>
+        <template if:false={isEdit}>
+            <lightning-record-view-form
+            id="recordViewForm"
+            record-id={caseid}
+            object-api-name="Case"
+            columns="2"
+            onsuccess={onload}>
+            <lightning-messages></lightning-messages>
+            <lightning-output-field field-name="CaseNumber" >
+            </lightning-output-field>
+            <lightning-output-field field-name="RecordTypeId">
+            </lightning-output-field>
+            <lightning-output-field field-name="Type">
+            </lightning-output-field>
+            <lightning-output-field field-name="Subject">
+            </lightning-output-field>
+            <lightning-output-field field-name="Priority">
+            </lightning-output-field>
+            <!--<lightning-output-field field-name="Case_Creation_Date__c" value={caseCreationDate}>
+            </lightning-output-field>-->
+            <!--<lightning-output-field field-name="Legacy_Territory__c" value={LegacyTerritory}>
+            </lightning-output-field>-->
+            <lightning-output-field field-name="Origin">
+            </lightning-output-field>
+            <lightning-output-field field-name="Reason">
+            </lightning-output-field>
+            <lightning-output-field field-name="Description">
+            </lightning-output-field>
+            <lightning-output-field field-name="Full_Service_Address__c">
+            </lightning-output-field>
+            <!--<lightning-output-field field-name="Case_Submitter__c" >
+            </lightning-output-field>-->
+            <!--<lightning-output-field field-name="Complaint_Received_Date__c" value={ComplaintDate}>
+            </lightning-output-field>-->
+            <lightning-output-field field-name="Telephone_Number__c">
+            </lightning-output-field>
+            </lightning-record-view-form>
+        </template>
+        
+        
+    </div>
+    </lightning-card>
+</template>

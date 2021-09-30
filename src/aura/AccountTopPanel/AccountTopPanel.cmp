@@ -1,0 +1,12 @@
+<aura:component implements="lightning:actionOverride,flexipage:availableForRecordHome,force:lightningQuickActionWithoutHeader,force:hasRecordId">
+    <aura:attribute name="collapsableIcon" type="String" default="utility:up"/>
+    <aura:attribute name="height" type="integer" default="175"/>
+    <div class="cmpClass">
+        <div aura:id="mainPanel" class="bodyStyle">
+            <iframe src="{!'/apex/consoleCustomHeaderLEX?Id='+ v.recordId}" width="100%" height="{!v.height}" frameBorder="0"/>
+        </div>
+        <button class="slds-button slds-button_icon class slds-align_absolute-center collapsableIcon" onclick="{!c.toggleAction}">
+            <lightning:icon iconName="{!v.collapsableIcon}" size="x-small"/>
+        </button>
+    </div>
+</aura:component>

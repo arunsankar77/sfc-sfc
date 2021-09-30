@@ -1,0 +1,226 @@
+<template>
+  <template if:false={hasVerifiedAcct}>
+    <c-container-modal
+      onclose={handleModalClose}
+	  onredirect={handleRedirect}
+      is-closable={isNotInForceMode}
+      is-loading-data
+      should-show-modal={shouldShowModal}
+	  is-redirectable={isSubtab}
+    >
+      <div slot="headerContent">
+        <c-customer360-header
+          record-id={recordId}
+          add-borders
+        ></c-customer360-header>
+      </div>
+      <div slot="body">
+        <template if:true={shouldForceDiscountHandling}>
+          <c-discount-errors
+            discount-err-msgs={discountErrMsgs}
+            onsave={handleDiscountHandlingSave}
+            record-id={recordId}
+          ></c-discount-errors>
+        </template>
+        <template if:true={isBln}>
+          <div
+            style="border-color:red;border-style:solid; border-radius:4px;background-color: #ffc;padding: 6px 8px 6px 6px;
+                      margin: 4px 20px; border-width: 1px;"
+          >
+            {errorMsg1}
+          </div>
+        </template>
+        <template if:true={ispppBln}>
+          <div
+            style="border-color:red;border-style:solid; border-radius:4px;background-color: #ffc;padding: 6px 8px 6px 6px;
+                      margin: 4px 20px; border-width: 1px;"
+          >
+            <center>{pppMsg1}</center>
+          </div>
+        </template>
+	<!--Comments: Added for User story CSICC - 45251-->
+        <template if:true={OnCris_Embargo}>
+          <div
+            style="border-color:red;border-style:solid; border-radius:4px;background-color: #ffc;padding: 6px 8px 6px 6px;
+                      margin: 4px 20px; border-width: 1px;"
+          >
+            <center>{label.MessageText}</center>
+          </div>
+        </template>
+		<!--Comments: Added for User story CSICC - 407-->
+        <template if:true={isENSAccount}>
+          <div
+            style="border-color:red;border-style:solid; border-radius:4px;background-color: #ffc;padding: 6px 8px 6px 6px;
+                      margin: 4px 20px; border-width: 1px;"
+          >
+            <center>{label.ENSMessageText}</center>
+          </div>
+        </template>
+		<!--Comments: CSICC - 44851 : CRIS to Eshop Account -->
+        <template if:true={cris_Converted}>
+          <div
+            style="border-color:red;border-style:solid; border-radius:4px;background-color: #ffc;padding: 6px 8px 6px 6px;
+                      margin: 8px 20px; border-width: 1px;"
+          >
+            <center>{label.ConvertedMessageText}</center>
+          </div>
+        </template>
+      <!-- Comments: CSICC - 44851 End -->  
+	  
+        <template if:false={shouldForceDiscountHandling}>
+          <c-page-message></c-page-message>
+          <lightning-tabset>
+            <template if:false={shouldForceConfirmation}>
+              <lightning-tab label="Details">
+                <c-account-verification
+                  record-id={recordId}
+                  is-verified={isVerified}
+                  callout-data={calloutData}
+                  call-data={callData}
+                  onerrormsg={ErrorMsg}
+                  onpppmsg={pppmsg}
+                ></c-account-verification>
+              </lightning-tab>
+              <lightning-tab label="Customer Notes">
+                <!-- <template if:true={canViewNewNotes}> -->
+                  <c-customer-notes-lwc record-id={recordId}>
+                  </c-customer-notes-lwc>
+                <!-- </template> -->
+                <!-- <template if:false={canViewNewNotes}>
+                  <iframe
+                    src={custNotesUrl}
+                    style="height:300px;width:100%;"
+                  ></iframe>
+                </template> -->
+              </lightning-tab>
+            </template>
+            <lightning-tab
+              label="Communication Preferences"
+              icon-name={commPrefIcon}
+            >
+              <template if:true={ppp_Billling}>
+                <c-communication-preference-pre-paid
+                  record-id={recordId}
+                  confirm-from-start={shouldForceConfirmation}
+                  onconfirmed={handleCommPrefsConfirmed}
+                  is-from-model={isFromModel}
+                ></c-communication-preference-pre-paid>
+              </template>
+			  
+              <template if:false={ppp_Billling}>
+                <c-communication-preferences
+                  record-id={recordId}
+                  confirm-from-start={shouldForceConfirmation}
+                  onconfirmed={handleCommPrefsConfirmed}
+                  is-from-model={isFromModel}
+                ></c-communication-preferences>
+              </template>
+            </lightning-tab>
+          </lightning-tabset>
+        </template>
+      </div>
+
+      <template if:true={isNotInForceMode}>
+        <lightning-button-group
+          class="slds-align_absolute-center"
+          slot="footer"
+        >
+          <template if:true={isVerified}>
+            <lightning-button
+              disabled={isDisabled}
+              label="Verified"
+              title="Verified"
+              onclick={handleClick}
+              icon-name="utility:check"
+              variant="success"
+            ></lightning-button>
+          </template>
+          <template if:false={isVerified}>
+            <lightning-button
+              disabled={isDisabled}
+              label={VERIFIED_BUTTON_LABEL}
+              title={VERIFIED_BUTTON_LABEL}
+              onclick={handleClick}
+            ></lightning-button>
+          </template>
+          <lightning-button
+            disabled={isDisabled}
+            label="Not Verified"
+            title="Not Verified"
+            onclick={handleClick}
+          ></lightning-button>
+          <lightning-button
+            disabled={isDisabled}
+            label="Research"
+            title="Research"
+            onclick={handleClick}
+          ></lightning-button>
+        </lightning-button-group>
+        <div class="slds-align_absolute-center" slot="footer">
+          {MultipleClicksWarning}
+        </div>
+        <!--  
+          <template if:false={isVerified}> 
+          <div class="slds-align_absolute-center" slot="footer">
+              <lightning-record-edit-form
+              record-id={recordId}
+              object-api-name="Account">
+              <lightning-layout-item class={layoutItemClass} size="6">
+              <lightning-input-field field-name="Enhanced_Authentication_Verified__c" data-id="checkboxVal" value = "{isCustomerFullyAuthenticated}" ></lightning-input-field>
+              </lightning-layout-item>
+            </lightning-record-edit-form>      
+  
+          </div>
+        </template>
+          -->
+      </template>
+    </c-container-modal>
+    <template if:true={openmodel}>
+      <div class="demo-only" style="height: 640px;">
+        <section
+          role="dialog"
+          tabindex="-1"
+          aria-labelledby="modal-heading-01"
+          aria-modal="true"
+          aria-describedby="modal-content-id-1"
+          class="slds-modal slds-fade-in-open"
+        >
+          <div class="slds-modal__container">
+            <header class="slds-modal__header" style="background: #f6f7f6;">
+              <button
+                class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                title="Close"
+                onclick={closeModal}
+              >
+                <!-- <lightning-icon icon-name="utility:close" size="medium">
+                            </lightning-icon>-->
+                <span class="slds-assistive-text">OK</span>
+              </button>
+              <h2
+                id="modal-heading-01"
+                class="slds-text-heading_medium slds-hyphenate"
+              >
+                Downgrade Alert
+              </h2>
+            </header>
+            <div
+              class="slds-modal__content slds-p-around_medium"
+              id="modal-content-id-1"
+            >
+              <center><p>{label.downgradeMsg}</p></center>
+            </div>
+            <footer class="slds-modal__footer">
+              <lightning-button
+                label="OK"
+                variant="neutral"
+                onclick={closeModal}
+              ></lightning-button
+              >&nbsp;&nbsp;&nbsp;&nbsp;
+            </footer>
+          </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+      </div>
+    </template>
+  </template>
+</template>

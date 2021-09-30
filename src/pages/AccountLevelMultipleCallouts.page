@@ -1,0 +1,2 @@
+<apex:page standardController="Account" extensions="AccountVerificationRedirectExtension"  showHeader="false" sidebar="false" action="{!refreshTroubleTicketSummaryData}" >
+</apex:page>
